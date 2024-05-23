@@ -2,7 +2,7 @@
 
 start_time=$(date +%s)
 # Функция проверки root-прав доступа
-if [ "$(id -u)" -ne 0 ]; thenч
+if [ "$(id -u)" -ne 0 ]; then
   echo "No Root Access" 1>&2
   exit 1
 fi
