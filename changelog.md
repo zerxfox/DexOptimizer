@@ -3,7 +3,7 @@ v2.0.0
 - Изменены команды оптимизации dex.
 - Добавлен таймер выполнения скрипта.
 - Список команд оптимизации dex:
-1. cmd package compile -a -m everything -f --check-prof false: компилирует все dex файлы для всех приложений, но без использования профиля
+1. cmd package compile -a -m everything -f: компилирует все dex файлы для всех приложений, но без использования профиля
 2. cmd package compile -a -m everything-profile -f: компилирует все dex файлы для всех приложений, используя профиль для оптимизации кода
 3. cmd package compile -a -p PRIORITY_INTERACTIVE_FAST -f --full: компилирует все dex файлы для всех приложений в режиме 'Fast' с высоким приоритетом интерактивности
 4. cmd package compile -a -m speed-profile -f: компилирует все dex файлы для всех приложений с использованием профиля для оптимизации скорости
