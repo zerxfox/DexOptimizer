@@ -11,10 +11,10 @@ v1.0.0
 
 v2.0.0
 - Добавлено обновления модуля через репозиторий GitHub.
-- Добавлены команды оптимизации dex:
-1. cmd package compile -a -f --optimize-profiles specific: оптимизирует dex файлы с использованием определенных профилей.
-2. cmd package compile -a -f --optimize-devices specific: оптимизирует dex файлы для конкретных устройств.
-3. cmd package compile -a -f --auto-resource-allocation: автоматически распределяет ресурсы для оптимизации.
-4. cmd package manage-cache -a --optimize-cache: управляет кэшем приложения с оптимизацией кэша.
-5. cmd package schedule-optimize -a -t 3:00am: планирует оптимизацию dex файлов на определенное время (3:00 утра).
-6. cmd package monitor -a --report-results: мониторит и отчитывается о результатах оптимизации.
+- Изменены команды оптимизации dex.
+- Добавлен таймер выполнения скрипта
+- Список команд оптимизации dex:
+1. cmd package compile -a -m everything -f --check-prof false: компилирует все dex файлы для всех приложений, но без использования профиля
+2. cmd package compile -a -m everything-profile -f: компилирует все dex файлы для всех приложений, используя профиль для оптимизации кода
+3. cmd package compile -a -p PRIORITY_INTERACTIVE_FAST -f --full: компилирует все dex файлы для всех приложений в режиме 'Fast' с высоким приоритетом интерактивности
+4. cmd package compile -a -m speed-profile -f: компилирует все dex файлы для всех приложений с использованием профиля для оптимизации скорости
