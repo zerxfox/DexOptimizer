@@ -27,7 +27,7 @@ echo ">>> Starting compilation" > "$LOG_FILE"
 
 # Компилирание всех dex файлов без проверки профиля.
 echo ">>> Compiling everything" | tee -a "$LOG_FILE"
-(cmd package compile -a -m everything -f --check-prof false 2>&1 | tee -a "$LOG_FILE")
+(cmd package compile -a -m everything 2>&1 | tee -a "$LOG_FILE")
 
 # Ожидание завершения всех фоновых процессов
 wait
