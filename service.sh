@@ -27,28 +27,28 @@ echo ">>> Starting compilation" > "$LOG_FILE"
 
 # Компилирание всех dex файлов без проверки профиля.
 echo ">>> Compiling everything" | tee -a "$LOG_FILE"
-(cmd package compile -a -m everything 2>&1 | tee -a "$LOG_FILE")
+cmd package compile -a -m everything -f 2>&1 | tee -a "$LOG_FILE"
 
 # Ожидание завершения всех фоновых процессов
 wait
 
 # Компилирование всех dex файлов с использованием профиля для оптимизации.
 echo ">>> Compiling everything-profile" | tee -a "$LOG_FILE"
-(cmd package compile -a -m everything-profile -f 2>&1 | tee -a "$LOG_FILE")
+cmd package compile -a -m everything-profile -f 2>&1 | tee -a "$LOG_FILE"
 
 # Ожидание завершения всех фоновых процессов
 wait
 
 # Компилирование всех dex файлов (full: primary-dex и secondary-dex) (Fast режим).
 echo ">>> Compiling ALL dex (FAST mode)" | tee -a "$LOG_FILE"
-(cmd package compile -a -p PRIORITY_INTERACTIVE_FAST -f --full 2>&1 | tee -a "$LOG_FILE")
+cmd package compile -a -p PRIORITY_INTERACTIVE_FAST -f --full 2>&1 | tee -a "$LOG_FILE"
 
 # Ожидание завершения всех фоновых процессов
 wait
 
 # Компилирование всех dex файлов (Максимизация скорости выполнения приложений с учетом профилирования).
 echo ">>> Compiling speed-profile" | tee -a "$LOG_FILE"
-(cmd package compile -a -m speed-profile -f 2>&1 | tee -a "$LOG_FILE")
+cmd package compile -a -m speed-profile -f 2>&1 | tee -a "$LOG_FILE"
 
 # Ожидание завершения всех фоновых процессов
 wait
