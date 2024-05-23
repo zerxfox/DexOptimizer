@@ -2,7 +2,7 @@ MODNAME="DexOptimizer"
 DEVNAME="Magellan, ZerxFox, Гоша"
 MODREQ="Android 9+ & Magisk 23+"
 DEVLINK="@ZerxFox"
-LINKPUB="t.me/magiskksuapatchhub"
+LINKPUB="t.me/MkAMHub"
 
 echo " | Модуль: $MODNAME"
 echo " |"
