@@ -1,7 +1,7 @@
 id=dex_optimizer
 name=Dex optimization
-version=2.0.0
-versioncode=2000
+version=4.0.0
+versioncode=4000
 author=NotXHDSOS & Magellan & zerxfox
 description=The dex optimizer improves performance, saves resources, and reduces application startup time.
 minMagisk=2300
