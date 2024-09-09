@@ -1,0 +1,156 @@
+#!/system/bin/sh
+
+LANG=$(settings get system system_locales)
+SDK_VERSION=$(getprop ro.build.version.sdk)
+start_time=$(date +%s)
+
+is_russian() {
+  [[ "$LANG" == *"en-RU"* ]] || [[ "$LANG" == *"ru-"* ]]
+}
+
+log_msg() {
+  echo "$1" | tee -a "$LOG_FILE"
+}
+
+msg_select() {
+  if is_russian; then
+    cat <<-EOF
+1: everything-profile: выявляет узкие места в коде,
+которые могут быть оптимизированы для улучшения
+производительности.
+2: speed-profile: оптимизирует скорость выполнения
+работы приложений, улучшает отклик интерфейса.
+EOF
+  else
+    cat <<-EOF
+1: everything-profile: identifies bottlenecks in the
+code, which can be optimized to improve performance.
+2: speed-profile: optimizes the execution speed of
+applications, enhances interface responsiveness.
+EOF
+  fi
+}
+
+compile_profile() {
+  profile="$1"
+  part="$2"
+  log_msg "App: $part"
+  
+  case "$SDK_VERSION" in
+    [2][3-9]|3[0-3]) cmd package compile -m "$profile" -f $part 2>&1 | tee -a "$LOG_FILE" ;;
+    [3][4-5]) cmd package compile -m "$profile" -p PRIORITY_INTERACTIVE_FAST -f --full $part 2>&1 | tee -a "$LOG_FILE" ;;
+  esac
+}
+
+process_part() {
+  profile="$1"
+  part="$2"
+  for pack in $part; do
+    compile_profile "$profile" "$pack"
+  done
+}
+
+DIRMOD="/storage/emulated/0/DexOptimizer"
+LOG_FILE="${DIRMOD}/script_log.txt"
+
+su -c mkdir -p "${DIRMOD}"
+: > "$LOG_FILE"
+
+log_msg ">>> The script running..."
+log_msg "$(getprop ro.product.name) | $(getprop ro.product.system.model)"
+
+if is_russian; then
+  echo "Выбери приложения (1: user, 2: system, 3: all): "
+  read -r PACKAGES
+  msg_select
+  echo "Выбери профиль (1: everything-profile, 2: speed-profile): "
+  read -r SETTINGS
+  echo "Выбери максимальное число процессов (4 - максимум): "
+  read -r PARTS
+else
+  echo "Enter the value for APPS (1: user, 2: system, 3: all): "
+  read -r PACKAGES
+  msg_select
+  echo "Enter the value for PROFILE (1: everything-profile, 2: speed-profile): "
+  read -r SETTINGS
+  echo "Enter the maximum number of PROCESSES (4 - max): "
+  read -r PARTS
+fi
+
+echo "Selected APPS: $PACKAGES"
+echo "Selected PROFILE: $SETTINGS"
+echo "Selected PROCESSES: $PARTS"
+
+case "$PACKAGES" in
+  1) packages_file=$(pm list packages -3 | awk '{sub("^package:", ""); print}') ;; # user
+  2) packages_file=$(pm list packages -s | awk '{sub("^package:", ""); print}') ;; # system
+  3) packages_file=$(pm list packages | awk '{sub("^package:", ""); print}') ;; # all
+  *) log_msg "Error: Invalid value" >&2; exit 1 ;;
+esac
+echo "$packages_file" | wc -l >> "$LOG_FILE"
+
+if [ "$PARTS" -lt 1 ] || [ "$PARTS" -gt 4 ]; then
+  log_msg "Error: PROCESSES must be between 1 and 4" >&2
+  exit 1
+fi
+
+total_count=$(echo "$packages_file" | wc -l)
+part_size=$(( (total_count + PARTS - 1) / PARTS ))
+
+parts=()
+i=0
+while [ $i -lt $PARTS ]; do
+  parts[$i]=""
+  i=$((i + 1))
+done
+
+i=0
+while [ $i -lt $total_count ]; do
+  part_index=$((i / part_size))
+  if [ $part_index -ge $PARTS ]; then
+    part_index=$((PARTS - 1))
+  fi
+  parts[$part_index]="${parts[$part_index]} $(echo "$packages_file" | sed -n "$((i + 1))p")"
+  i=$((i + 1))
+done
+
+case "$SETTINGS" in
+  1)
+    log_msg ">>> Compiling everything-profile"
+    i=0
+    while [ $i -lt $PARTS ]; do
+      process_part "everything-profile" "${parts[$i]}" &
+      i=$((i + 1))
+    done
+    ;;
+  2)
+    log_msg ">>> Compiling speed-profile"
+    i=0
+    while [ $i -lt $PARTS ]; do
+      process_part "speed-profile" "${parts[$i]}" &
+      i=$((i + 1))
+    done
+    ;;
+  *) 
+    log_msg "Error: Invalid value" >&2
+    exit 1
+    ;;
+esac
+wait
+
+log_msg ">>> Cleaning up"
+cmd package bg-dexopt-job 2>&1 | tee -a "$LOG_FILE"
+log_msg ">>> Done"
+
+execution_time=$(( $(date +%s) - start_time ))
+minutes=$((execution_time / 60))
+seconds=$((execution_time % 60))
+
+if is_russian; then
+  total_time="Время работы: ${minutes} минут и ${seconds} секунд"
+  su -lp 2000 -c "cmd notification post -S bigtext -t 'DexOptimizer' 'Tag' 'Скрипт выполнился успешно за ${minutes} минут и ${seconds} секунд!'"
+else
+  total_time="Working time: ${minutes} minutes and ${seconds} seconds"
+  su -lp 2000 -c "cmd notification post -S bigtext -t 'DexOptimizer' 'Tag' 'The script ran successfully in ${minutes} minutes and ${seconds} seconds!'"
+fi
+log_msg "$total_time"
