@@ -1,4 +1,34 @@
 # DexOptimizer
 [EN] The dex optimizer improves performance, saves resources, and reduces application startup time.
 
+**Compatibility**: The module may not work properly on devices with Android 9 and below.
+
+**Logs**: The log file can be found at: /storage/emulated/0/DexOptimizer.
+
+**Possible results**:
+- Device heating and battery drain: The module rebuilds each installed package, which can lead to significant heating of the device and increased battery drain.
+- Duration of work: The script execution time may vary depending on the processor power and the number of installed packages. A more powerful processor and fewer packages contribute to faster operation.
+
+**Compatibility with other optimizers**: Using the module in conjunction with other dex optimization modules is not recommended, as this may lead to unforeseen consequences.
+
+**Rebooting the device**: After running the script, a reboot is not required.
+
+**Usage**: Frequent use of the script can accelerate memory wear. It is recommended to use it once a week or two for optimal results and to preserve the longevity of the device.
+
+
+
 [RU] Оптимизатор dex повышает производительность, экономит ресурсы и сокращает время запуска приложений.
+
+**Совместимость**: Модуль может не работать должным образом на устройствах с Android 9 и ниже.
+
+**Логи**: Лог-файл можно найти по адресу: /storage/emulated/0/DexOptimizer.
+
+**Возможные результаты**:
+- Нагрев устройства и разряд батареи: Модуль пересобирает каждый установленный пакет, что может привести к значительному нагреву устройства и повышенному разряду батареи.
+- Длительность работы: Время выполнения скрипта может варьироваться в зависимости от мощности процессора и количества установленных пакетов. Более мощный процессор и меньшее количество пакетов способствуют более быстрой работе.
+
+**Совместимость с другими оптимизаторами**: Использование модуля совместно с другими модулями оптимизации dex не рекомендуется, так как это может привести к непредвиденным последствиям.
+
+**Перезагрузка устройства**: После выполнения скрипта перезагрузка не требуется.
+
+**Использование**: Частое использование скрипта может ускорить износ памяти. Рекомендуется использовать его раз в неделю или две для оптимального результата и сохранения долговечности устройства.
