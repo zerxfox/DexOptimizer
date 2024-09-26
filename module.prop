@@ -1,7 +1,7 @@
 id=dex_optimizer
 name=Dex optimization
-version=5.0.0
-versioncode=5000
-author=Magellan & zerxfox
-description=The dex optimizer improves performance, saves resources, and reduces application startup time.
+version=6.0.0
+versioncode=6000
+author=zerxfox
+description=The dex optimizer enhances application performance by improving resource efficiency and reducing startup time.
 updateJson=https://raw.githubusercontent.com/zerxfox/DexOptimizer/main/update.json
