@@ -1,7 +1,7 @@
 #!/bin/bash
 
 MODNAME="DexOptimizer"
-DEVNAME="ZerxFox, Magellan"
+DEVNAME="ZerxFox"
 MODREQ="Android 6+"
 DEVLINK="@ZerxFox"
 LINKPUB="t.me/OTATestersAndDevelopers"
