@@ -15,7 +15,7 @@
 
 **Usage**: Frequent use of the script can accelerate memory wear. It is recommended to use it once a week or two for optimal results and to preserve the longevity of the device.
 
-
+----------
 
 [RU] Оптимизатор dex повышает производительность, экономит ресурсы и сокращает время запуска приложений.
 
