@@ -4,7 +4,7 @@ LANG=$(settings get system system_locales)
 SDK_VERSION=$(getprop ro.build.version.sdk)
 DIRMOD="/storage/emulated/0/DexOptimizer"
 LOG_FILE="${DIRMOD}/script_log.txt"
-CURRENT_VERSION="7.0.0"
+CURRENT_VERSION="7.0.1"
 UPDATE_URL="https://raw.githubusercontent.com/zerxfox/DexOptimizer/main/update.json"
 
 app_count=()
@@ -342,30 +342,48 @@ module_update() {
   fi
 }
 
+show_changelog() {
+  CHANGELOG_URL="https://raw.githubusercontent.com/zerxfox/DexOptimizer/main/changelog.md"
+  
+  changelog_content=$(curl -s "$CHANGELOG_URL")
+  
+  if [ -n "$changelog_content" ]; then
+    clear
+    echo -e "╔════════════════════════════════════════════╗"
+    echo -e "║            DexOptimizer Changelog          ║"
+    echo -e "╚════════════════════════════════════════════╝"
+    echo "$changelog_content"
+  else
+    is_russian && echo "Не удалось загрузить changelog" || echo "Failed to load changelog"
+  fi
+}
+
+
 handle_selection() {
-  while true; do
-    case "$1" in
-      1) script_mode; break ;;
-      2) select_app_by_name; break ;;
-      3)
-        cmd package compile --reset -a
-        is_russian && echo "Профиль приложений очищен" || echo "Apps profile cleared"
-        continue ;;
-      4) module_update; break ;;
-      *)
-        is_russian && echo "Ошибка: Неверный выбор. Пожалуйста, выберите от 1 до 4" || echo "Error: Invalid selection. Please select from 1 to 4"
-        ;;
-    esac
-    echo -n "$(is_russian && echo "Выберите опцию: " || echo "Select an option: ")" 
-    read -r selection
-    handle_selection "$selection"
-  done
+  case "$1" in
+    1) script_mode; show_menu ;;
+    2) select_app_by_name; show_menu ;;
+    3)
+      cmd package compile --reset -a
+      is_russian && echo "Профиль приложений очищен" || echo "Apps profile cleared"
+      show_menu
+      ;;
+    4) module_update; show_menu;;
+    5) show_changelog; show_menu;;
+    *)
+      is_russian && echo "Ошибка: Неверный выбор. Пожалуйста, выберите от 1 до 5" || echo "Error: Invalid selection. Please select from 1 to 5"
+      echo -n "$(is_russian && echo "Выберите опцию: " || echo "Select an option: ")" 
+      ;;
+  esac
+
+  read -r selection
+  handle_selection "$selection"
 }
 
 show_menu() {
-  echo -e "┌─────────────────────────────────┐"
-  echo -e "│        DexOptimizer Menu        │"
-  echo -e "└─────────────────────────────────┘"
+    echo -e "╔════════════════════════════════════════════╗"
+    echo -e "║             DexOptimizer Menu              ║"
+    echo -e "╚════════════════════════════════════════════╝"
   echo ""
   LATEST_VERSION=$(curl -s $UPDATE_URL | grep '"version":' | awk -F '"' '{print $4}')
 
@@ -379,6 +397,7 @@ show_menu() {
   is_russian && echo "[2] Выбрать профиль приложению" || echo "[2] Select a profile for the app"
   is_russian && echo "[3] Очистить профиль всех приложений" || echo "[3] Clear all apps profiles"
   is_russian && echo "[4] Обновить модуль" || echo "[4] Update module"
+  is_russian && echo "[5] Показать изменения" || echo "[5] Show the changelog"
   echo ""
   is_russian && echo -n "Выберите опцию: " || echo -n "Select an option: "
 }
