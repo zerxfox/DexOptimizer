@@ -1,6 +1,6 @@
 id=dex_optimizer
 name=Dex optimization
-version=7.0.0
-versioncode=7000
+version=7.5.0
+versioncode=7500
 author=zerxfox
-description=The dex optimizer enhances application performance by improving resource efficiency and reducing startup time. Start in terminal (su; deop).
+description=The dex optimizer enhances application performance by improving resource efficiency and reducing startup time. Start in terminal (su -с deop).
