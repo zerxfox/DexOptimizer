@@ -1,7 +1,7 @@
 # DexOptimizer
-[EN] The dex optimizer improves performance, saves resources, and reduces application startup time.
+[EN] The dex optimizer enhances application performance by improving resource efficiency and reducing startup time.
 
-**Compatibility**: The module may not work properly on devices with Android 9 and below.
+**Start in terminal for example in Termux:** su -с deop
 
 **Logs**: The log file can be found at: /storage/emulated/0/DexOptimizer.
 
@@ -13,13 +13,13 @@
 
 **Rebooting the device**: After running the script, a reboot is not required.
 
-**Usage**: Frequent use of the script can accelerate memory wear. It is recommended to use it once a week or two for optimal results and to preserve the longevity of the device.
+**Usage**: Frequent use of the script may accelerate memory wear. It is recommended to use it once every two or three weeks for optimal results and to maintain the longevity of the device.
 
 ----------
 
-[RU] Оптимизатор dex повышает производительность, экономит ресурсы и сокращает время запуска приложений.
+[RU] Оптимизатор dex повышает производительность приложений за счет повышения эффективности использования ресурсов и сокращения времени запуска.
 
-**Совместимость**: Модуль может не работать должным образом на устройствах с Android 9 и ниже.
+**Запуск в терминале, например, в Termux:** su -c deop
 
 **Логи**: Лог-файл можно найти по адресу: /storage/emulated/0/DexOptimizer.
 
@@ -31,4 +31,4 @@
 
 **Перезагрузка устройства**: После выполнения скрипта перезагрузка не требуется.
 
-**Использование**: Частое использование скрипта может ускорить износ памяти. Рекомендуется использовать его раз в неделю или две для оптимального результата и сохранения долговечности устройства.
+**Использование**: Частое использование скрипта может ускорить износ памяти. Рекомендуется использовать его раз в две или три недели для оптимального результата и сохранения долговечности устройства.
