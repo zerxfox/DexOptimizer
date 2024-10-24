@@ -1,7 +1,7 @@
 # DexOptimizer
 [EN] The dex optimizer enhances application performance by improving resource efficiency and reducing startup time.
 
-**Start in terminal for example in Termux:** su -с deop
+**Start in terminal, for example, in Termux:** su -с deop
 
 **Logs**: The log file can be found at: /storage/emulated/0/DexOptimizer.
 
