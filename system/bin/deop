@@ -4,7 +4,7 @@ LANG=$(settings get system system_locales)
 SDK_VERSION=$(getprop ro.build.version.sdk)
 DIRMOD="/storage/emulated/0/DexOptimizer"
 LOG_FILE="${DIRMOD}/script_log.txt"
-CURRENT_VERSION="7.5.0"
+CURRENT_VERSION="7.5.1"
 UPDATE_URL="https://raw.githubusercontent.com/zerxfox/DexOptimizer/main/update.json"
 
 app_count=()
@@ -208,11 +208,17 @@ get_package_size() {
 }
 
 reset_mode(){
+  while true; do
+    is_russian && echo -n "Выбери максимальное число процессов (10 - максимум): " || echo -n "Select the maximum count of PROCESSES (10 - max): "
+    read -r PARTS
+    if valid_choice "$PARTS" 1 10; then break; fi
+    log_msg "$(is_russian && echo "Ошибка: ПРОЦЕССОВ должно быть от 1 до 10" || echo "Error: PROCESSES must be between 1 and 10")" >&2
+  done
+
   is_russian && echo "¦ Изменение режима производительности на максимальный" || echo "¦ Changing the performance mode to the maximum"
   setprop sys.perf.profile perfomance
 
   is_russian && echo "¦ Сортировка приложений по размеру" || echo "¦ Sorting applications by size"
-  PARTS=5
   packages_file=$(pm list packages | cut -d':' -f2)
   sorted_packages=$(while read -r pkg; do
     size=$(get_package_size "$pkg")
@@ -309,6 +315,12 @@ script_mode() {
     fi
   done
 
+  while true; do
+    is_russian && echo -n "Запустить задачу оптимизации DEX? (1: Да, 2: Нет): " || echo -n "Execute DEX optimization task? (1: Yes, 2: No): "
+    read -r bgdj
+    if valid_choice "$bgdj" 1 2; then break; fi
+  done
+
   is_russian && echo "¦ Изменение режима производительности на максимальный" || echo "¦ Changing the performance mode to the maximum"
   setprop sys.perf.profile perfomance
   is_russian && echo "¦ Сортировка приложений по размеру" || echo "¦ Sorting applications by size"
@@ -364,12 +376,6 @@ script_mode() {
     i=$((i + 1))
   done
   wait
-
-  while true; do
-    is_russian && echo -n "Запустить задачу оптимизации DEX? (1: Да, 2: Нет): " || echo -n "Execute DEX optimization task? (1: Yes, 2: No): "
-    read -r bgdj
-    if valid_choice "$bgdj" 1 2; then break; fi
-  done
 
   if [ "$bgdj" -eq 1 ]; then
     log_msg "$(is_russian && echo "¦ Выполнение задачи оптимизации DEX" || echo "¦ Executing DEX Optimization Task")"
@@ -462,7 +468,7 @@ select_app_by_name() {
 
 show_changelog() {
   CHANGELOG_URL="https://raw.githubusercontent.com/zerxfox/DexOptimizer/main/changelog.md"
-  changelog_content=$(wget -qO- "$CHANGELOG_URL")
+  changelog_content=$(wget --no-check-certificate -qO- "$CHANGELOG_URL")
   if [ -n "$changelog_content" ]; then
     clear
     echo -e "╔════════════════════════════════════════════╗"
