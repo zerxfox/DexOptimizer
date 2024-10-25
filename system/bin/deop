@@ -4,7 +4,7 @@ LANG=$(settings get system system_locales)
 SDK_VERSION=$(getprop ro.build.version.sdk)
 DIRMOD="/storage/emulated/0/DexOptimizer"
 LOG_FILE="${DIRMOD}/script_log.txt"
-CURRENT_VERSION="7.5.1"
+CURRENT_VERSION="7.5.2"
 UPDATE_URL="https://raw.githubusercontent.com/zerxfox/DexOptimizer/main/update.json"
 
 app_count=()
@@ -208,6 +208,14 @@ get_package_size() {
 }
 
 reset_mode(){
+  valid_choice() {
+  if [ "$1" -eq "$1" ] 2>/dev/null; then
+    [ "$1" -ge "$2" ] && [ "$1" -le "$3" ]
+  else
+    return 1
+  fi
+  }
+  
   while true; do
     is_russian && echo -n "Выбери максимальное число процессов (10 - максимум): " || echo -n "Select the maximum count of PROCESSES (10 - max): "
     read -r PARTS
