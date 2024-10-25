@@ -4,7 +4,7 @@ LANG=$(settings get system system_locales)
 SDK_VERSION=$(getprop ro.build.version.sdk)
 DIRMOD="/storage/emulated/0/DexOptimizer"
 LOG_FILE="${DIRMOD}/script_log.txt"
-CURRENT_VERSION="7.5.2"
+CURRENT_VERSION="7.5.3"
 UPDATE_URL="https://raw.githubusercontent.com/zerxfox/DexOptimizer/main/update.json"
 
 app_count=()
@@ -27,6 +27,14 @@ msg_select() {
   else
     echo "1: everything-profile: identifies bottlenecks in the code to improve performance."
     echo "2: speed-profile: optimizes execution speed, enhances interface responsiveness."
+  fi
+}
+
+valid_choice() {
+  if [ "$1" -eq "$1" ] 2>/dev/null; then
+    [ "$1" -ge "$2" ] && [ "$1" -le "$3" ]
+  else
+    return 1
   fi
 }
 
@@ -208,14 +216,6 @@ get_package_size() {
 }
 
 reset_mode(){
-  valid_choice() {
-  if [ "$1" -eq "$1" ] 2>/dev/null; then
-    [ "$1" -ge "$2" ] && [ "$1" -le "$3" ]
-  else
-    return 1
-  fi
-  }
-  
   while true; do
     is_russian && echo -n "Выбери максимальное число процессов (10 - максимум): " || echo -n "Select the maximum count of PROCESSES (10 - max): "
     read -r PARTS
@@ -267,14 +267,6 @@ reset_mode(){
 }
 
 script_mode() {
-  valid_choice() {
-  if [ "$1" -eq "$1" ] 2>/dev/null; then
-    [ "$1" -ge "$2" ] && [ "$1" -le "$3" ]
-  else
-    return 1
-  fi
-  }
-
   while true; do
     is_russian && echo -n "Выбери режим скрипта (1: Автоматический, 2: Ручной): " || echo -n "Select the script mode (1: Automatic, 2: Manual): "
     read -r WORK
@@ -519,8 +511,12 @@ module_update() {
 
         log_msg "$(is_russian && echo "Модуль обновлен до версии: $LATEST_VERSION" || echo "Module updated to version: $LATEST_VERSION")"
         
-        is_russian && echo -n "Выполнить перезагрузку? (1: Да, 2: Нет): " || echo -n "Do you want to reboot? (1: Yes, 2: No): "
-        read -r reboot_choice
+        while true; do
+          is_russian && echo -n "Выполнить перезагрузку? (1: Да, 2: Нет): " || echo -n "Do you want to reboot? (1: Yes, 2: No): "
+          read -r reboot_choice
+          if valid_choice "$reboot_choice" 1 2; then break; fi
+        done
+
         if [ "$reboot_choice" -eq 1 ]; then
           reboot
         fi
