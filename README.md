@@ -1,4 +1,9 @@
 # DexOptimizer
+
+Telegram Chat: [<img src="https://img.icons8.com/color/48/000000/telegram-app.png" width="24"/>](https://t.me/GhostCISProject_TaD)
+
+Telegram Channel: [<img src="https://img.icons8.com/color/48/000000/telegram-app.png" width="24"/>](https://t.me/GhostCISProject)
+
 [EN] The dex optimizer enhances application performance by improving resource efficiency and reducing startup time.
 
 **Start in terminal, for example, in Termux:** 
@@ -34,5 +39,3 @@ su -c deop
 **Перезагрузка устройства**: После выполнения скрипта перезагрузка не требуется.
 
 **Использование**: Частое использование скрипта может ускорить износ памяти. Рекомендуется использовать его раз в две или три недели для оптимального результата и сохранения долговечности устройства.
-
-Telegram Chat: [<img src="https://img.icons8.com/color/48/000000/telegram-app.png" width="24"/>](https://t.me/OTATestersAndDevelopers)
