@@ -2,7 +2,7 @@
 
 ---
 
-[Русский](https://github.com/zerxfox/DexOptimizer/tree/main?tab=readme-ov-file) | [English](https://github.com/zerxfox/DexOptimizer/tree/main?tab=readme-ov-file#-1)
+[Русский](https://github.com/zerxfox/DexOptimizer/tree/main?tab=readme-ov-file#) | [English](https://github.com/zerxfox/DexOptimizer/tree/main?tab=readme-ov-file#-1)
 
 ---
 
