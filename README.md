@@ -6,6 +6,8 @@
 
 ---
 
+---
+## 🇷🇺
 🚀 **DexOptimizer** — модуль для оптимизации DEX-файлов, повышающий производительность приложений за счёт эффективного использования ресурсов и сокращения времени их запуска.
 
 📢 **Telegram-сообщество:**
@@ -55,7 +57,7 @@ su -c deop
 ---
 
 ---
-
+## 🇺🇸
 🚀 **DexOptimizer** optimizes DEX files to improve application performance, enhance resource efficiency, and reduce startup time.
 
 📢 **Telegram Community:**
