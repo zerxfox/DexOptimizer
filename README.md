@@ -2,7 +2,7 @@
 
 ---
 
-[Русский](№ru) | [English](#en)
+[Русский](https://github.com/zerxfox/DexOptimizer/tree/main?tab=readme-ov-file) | [English](#en)
 
 ---
 
