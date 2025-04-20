@@ -7,7 +7,7 @@
 <p align="center">
   <a href="README_RU.md"><img src="https://img.shields.io/badge/🇷🇺-Читать%20на%20русском-blue" alt="Read in Russian"></a>
   &nbsp;
-  <a href="README_EN.md"><img src="https://img.shields.io/badge/🇬🇧-Read%20in%20English-green" alt="Read in English"></a>
+  <a href="README_EN.md"><img src="https://img.shields.io/badge/🇺🇸-Read%20in%20English-green" alt="Read in English"></a>
 </p>
 
 ---
