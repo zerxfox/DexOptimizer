@@ -2,6 +2,8 @@
 
 ⚡ **Dex Optimizer** is a module that optimizes DEX files to improve app performance by enhancing resource usage and reducing startup time.
 
+🍓 **Webroot Interface requires** → [Webroot Manager](https://github.com/zerxfox/Webroot-Manager)
+
 ---
 
 ## 📌 Features
@@ -22,6 +24,10 @@
 ```bash
 su -c deop
 ```
+
+🚀 **Launching Webroot Interface**  
+▸ **Browser:** `http://localhost:8080/dex_optimizer/webroot/index.html`  
+▸ **Alternative:** Via action-button in root manager
 
 📌 **Logs are stored at:**
 ```
