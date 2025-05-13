@@ -23,6 +23,10 @@
 su -c deop
 ```
 
+🚀 **Запуск Webroot-интерфейса**  
+▸ **Браузер:** `http://localhost:8080/dex_optimizer/webroot/index.html`  
+▸ **Через:** Action-button в рут-менеджере
+
 📌 **Логи работы модуля хранятся в:**
 ```
 /storage/emulated/0/DexOptimizer
