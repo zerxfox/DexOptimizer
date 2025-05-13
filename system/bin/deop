@@ -4,7 +4,7 @@ LANG=$(settings get system system_locales)
 SDK_VERSION=$(getprop ro.build.version.sdk)
 DIRMOD="/storage/emulated/0/DexOptimizer"
 LOG_FILE="${DIRMOD}/script_log.txt"
-CURRENT_VERSION="7.5.3"
+CURRENT_VERSION="8.0.0"
 UPDATE_URL="https://raw.githubusercontent.com/zerxfox/DexOptimizer/main/update.json"
 
 app_count=()
@@ -206,7 +206,7 @@ process_reset_part() {
 
 get_package_size() {
   package_name=$1
-  packages_file=$(pm list packages | cut -d':' -f2)
+  apk_path=$(pm path "$package_name" | cut -d':' -f2)
   if [ -n "$apk_path" ]; then
     size=$(stat -c%s "$apk_path" 2>/dev/null)
     echo "$size"
@@ -222,9 +222,6 @@ reset_mode(){
     if valid_choice "$PARTS" 1 10; then break; fi
     log_msg "$(is_russian && echo "Ошибка: ПРОЦЕССОВ должно быть от 1 до 10" || echo "Error: PROCESSES must be between 1 and 10")" >&2
   done
-
-  is_russian && echo "¦ Изменение режима производительности на максимальный" || echo "¦ Changing the performance mode to the maximum"
-  setprop sys.perf.profile perfomance
 
   is_russian && echo "¦ Сортировка приложений по размеру" || echo "¦ Sorting applications by size"
   packages_file=$(pm list packages | cut -d':' -f2)
@@ -262,8 +259,6 @@ reset_mode(){
   wait
 
   is_russian && echo "¦ Профиль приложений очищен" || echo "¦ Apps profile cleared"
-  is_russian && echo "¦ Изменение режима производительности на стандартный" || echo "¦ Changing the performance mode to the default"
-  setprop sys.perf.profile default 
 }
 
 script_mode() {
@@ -321,8 +316,6 @@ script_mode() {
     if valid_choice "$bgdj" 1 2; then break; fi
   done
 
-  is_russian && echo "¦ Изменение режима производительности на максимальный" || echo "¦ Changing the performance mode to the maximum"
-  setprop sys.perf.profile perfomance
   is_russian && echo "¦ Сортировка приложений по размеру" || echo "¦ Sorting applications by size"
 
   sorted_packages=$(while read -r pkg; do
@@ -386,9 +379,6 @@ script_mode() {
       log_msg "$(is_russian && echo "¦ Ошибка выполнения задачи" || echo "¦ Task execution error")"
     fi
   fi
-
-  is_russian && echo "¦ Изменение режима производительности на стандартный" || echo "¦ Changing the performance mode to the default"
-  setprop sys.perf.profile default
 
   notify_completion
 }
