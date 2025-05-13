@@ -1,6 +1,6 @@
 {
-    "version": "7.5.3",
-    "versionCode": 7503,
-    "zipUrl": "https://github.com/zerxfox/DexOptimizer/releases/download/v7.5.3/dex_optimizerV7.5.3.zip",
+    "version": "8.0.0",
+    "versionCode": 8000,
+    "zipUrl": "https://github.com/zerxfox/DexOptimizer/releases/download/v8.0.0/dex_optimizerV8.zip",
     "changelog": "https://raw.githubusercontent.com/zerxfox/DexOptimizer/main/changelog.md"
 }
