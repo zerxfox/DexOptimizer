@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DexOptimizer</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container" style="display: block; transform: translateY(0px);">
+        <div class="header-container">
+            <h1></h1>
+            <span class="review-item item-5" data-target="donate-container">❤️</span>
+        </div>
+            <p class="last-run-time"><span id="lastRunTimeLabel"></span> <b id="lastRunTime"></b></p>
+            <div class="task-box" id="dex-optimizer-box">
+                <h2>Dex Optimizer</h2>
+                <p>ZerxFox</p>
+            </div>              
+            <section class="module-review">
+                <h2>Меню</h2>
+                <div class="review-grid">
+                    <span class="review-item item-1" data-target="compile-container">⚡️<br>Компиляция</span>
+                    <span class="review-item item-2" data-target="clean-container">🗑<br>Очистка</span>
+                    <span class="review-item item-3" data-target="profile-container">🗳<br>Профиль приложения</span>
+                    <span class="review-item item-4" data-target="stats-container">📈<br>Статистика</span>                
+                </div>
+            </section>
+        <div class="theme-selector">
+            <div class="theme-option" data-theme="calmNight" style="background: #1c1c28;"></div>
+            <div class="theme-option" data-theme="mutedOcean" style="background: linear-gradient(45deg, #93a5cf 0%, #e4efe9 100%);"></div>
+            <div class="theme-option" data-theme="eclipse" style="background: linear-gradient(-9deg, #000000,#000000);"></div>
+        </div>
+    </div>
+
+    <div class="container-compile" id="compile-container" style="display: none;">
+        <div class="task-box-compile">
+            <h2>⚡️ <b>Компиляция</b></h2>
+        </div>
+        <div class="content">
+            <fieldset>
+                <legend>Настройки</legend>
+                <label for="mode">Режим скрипта:</label>
+                <div class="mode-buttons">
+                    <button id="autoBtn" class="mode-button" data-group="mode" onclick="setMode('auto')">Авто</button>
+                    <button id="manualBtn" class="mode-button" data-group="mode" onclick="setMode('manual')">Ручной</button>
+                </div>
+            </fieldset>
+            <div id="manual-options" style="display: none;">
+                <fieldset>
+                    <legend>Параметры</legend>
+                    <label for="apps">Приложения:</label>
+                    <div class="mode-buttons">
+                        <button id="userAppsBtn-compile" class="mode-button" data-group="apps-compile" data-value="user" onclick="setAppsCompile('user')">Пользовательские</button>
+                        <button id="systemAppsBtn-compile" class="mode-button" data-group="apps-compile" data-value="system" onclick="setAppsCompile('system')">Системные</button>
+                        <button id="allAppsBtn-compile" class="mode-button" data-group="apps-compile" data-value="all" onclick="setAppsCompile('all')">Все</button>
+                    </div>                    
+                    <label for="profile">Профиль:</label>
+                    <div class="mode-buttons">
+                        <button id="everythingProfileBtn" class="mode-button" data-group="profile" data-value="everything-profile" onclick="setProfile('everything-profile')">everything-profile</button>
+                        <button id="speedProfileBtn" class="mode-button" data-group="profile" data-value="speed-profile" onclick="setProfile('speed-profile')">speed-profile</button>
+                    </div>
+                </fieldset>
+            </div>
+            <fieldset>
+                <legend>Дополнительно</legend>
+                <label for="processes-compile" class="slider-label">
+                    Число процессов:
+                    <div id="sliderValue-compile" class="slider-value">1</div>
+                </label>
+                <div class="slider-container">
+                    <input type="range" id="processes-compile" min="1" max="25" value="1" step="1" class="slider" oninput="updateSliderValue(this)">
+                </div>
+                
+                <label for="dex-optimization">Оптимизация DEX:</label>
+                <div class="mode-buttons">
+                    <button id="yesBtn" class="mode-button" data-group="optimization" onclick="setOptimization('yes')">Да</button>
+                    <button id="noBtn" class="mode-button" data-group="optimization" onclick="setOptimization('no')">Нет</button>
+                </div>
+            </fieldset>
+        </div>
+        <button class="start-button" onclick="startProcess('compile-container', this, 'compile')">Начать</button>
+        <pre id="output-compile" style="display: none;"></pre>
+    </div>
+
+    <div class="container-compile" id="clean-container" style="display: none;">
+        <div class="task-box-compile">
+            <h2>🗑 <b>Очистка</b></h2>
+        </div>
+        <div class="content">
+            <fieldset>
+                <legend>Настройки</legend>
+                <label for="app">Приложения:</label>
+                <div class="mode-buttons">
+                    <button id="userAppsBtn-clean" class="mode-button" data-group="apps-clean" data-value="user" onclick="setAppsClean('user')">Пользовательские</button>
+                    <button id="systemAppsBtn-clean" class="mode-button" data-group="apps-clean" data-value="system" onclick="setAppsClean('system')">Системные</button>
+                    <button id="allAppsBtn-clean" class="mode-button" data-group="apps-clean" data-value="all" onclick="setAppsClean('all')">Все</button>
+                    <button id="selectivelyAppsBtn-clean" class="mode-button" data-group="apps-clean" data-value="selectively" onclick="setAppsClean('selectively')">Выборочно</button>
+                </div>
+                <label for="processes-clean" class="slider-label">
+                    Число процессов:
+                    <div id="sliderValue-clean" class="slider-value">1</div>
+                </label>
+                <div class="slider-container">
+                    <input type="range" id="processes-clean" min="1" max="25" value="1" step="1" class="slider" oninput="updateSliderValue(this)">
+                </div>
+            </fieldset>
+            <div id="app-selection-container" style="display: none;">
+                <fieldset>
+                    <legend>Приложения</legend>
+                    <label for="app-name-clean">Название приложения:</label>
+                    <div class="search-container" data-container="clean">
+                        <div class="input-wrapper">
+                            <input type="text" id="app-name-clean" placeholder="Введите название">
+                            <button class="search-button" onclick="searchApp(this, 'clean')">🔍</button>
+                        </div>
+                        <div class="results-container-clean"></div>
+                    </div>
+                </fieldset>
+            </div>
+        </div>
+        <button class="start-button" onclick="startProcess('clean-container', this, 'clean')">Начать</button>
+        <pre id="output-clean" style="display: none;"></pre>
+    </div>
+
+    <div class="container-compile" id="profile-container" style="display: none;">
+        <div class="task-box-compile">
+            <h2>🗳 <b>Профиль приложения</b></h2>
+        </div>
+        <div class="content">
+            <fieldset>
+                <legend>Параметры</legend>                 
+                <label for="profile">Профиль:</label>
+                <div class="mode-buttons">
+                    <button id="profile-everythingProfileBtn" class="mode-button" data-group="profile-container" data-value="everything-profile" onclick="setProfileContainer('everything-profile')">everything-profile</button>
+                    <button id="profile-speedProfileBtn" class="mode-button" data-group="profile-container" data-value="speed-profile" onclick="setProfileContainer('speed-profile')">speed-profile</button>
+                </div>
+            </fieldset>
+            <fieldset>
+                <legend>Приложения</legend>
+                <label for="app-name">Название приложения:</label>
+                <div class="search-container" data-container="profile">
+                    <div class="input-wrapper">
+                        <input type="text" id="app-name-profile" placeholder="Введите название">
+                        <button class="search-button" onclick="searchApp(this, 'profile')">🔍</button>
+                    </div>
+                    <div class="results-container-profile"></div>
+                </div>           
+            </fieldset>
+        </div>
+        <button class="start-button" onclick="startProcess('profile-container', this, 'profile')" disabled>Начать</button>
+        <pre id="output-profile" style="display: none;"></pre>
+    </div>
+
+    <div class="container-compile" id="stats-container" style="display: none;">
+        <div class="task-box-compile" id="stats-box">
+            <h2>📈 <b>Статистика</b></h2>
+        </div>
+        <div id="chartContainer">
+            <canvas id="statsChart"></canvas>
+        </div>
+    </div>
+
+    <div class="container-compile" id="donate-container" style="display: none;">
+        <div class="task-box-compile">
+            <h2>❤️ <b>Поддержка</b></h2>
+        </div>
+        <div class="buttons-container">
+            <button id="yoomoneyBtn" class="donate-btn yoomoney-btn">
+              <svg class="btn-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="white" stroke-width="2"/>
+                <path d="M8 12H16M12 8V16" stroke="white" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              Перевести на ЮMoney
+            </button>
+          
+            <button id="tgWalletBtn" class="donate-btn tg-btn">
+              <svg class="btn-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="white" stroke-width="2"/>
+                <path d="M8 13L11 16L16 8" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              TG wallet
+            </button>
+        </div>
+    </div>
+
+    <div id="info-message"></div>
+
+    <script src="chart.min.js"></script>
+    <script src="hammer.min.js"></script>
+    <script src="chartjs-plugin-zoom.min.js"></script>
+    <script src="chartjs-adapter-date-fns.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
