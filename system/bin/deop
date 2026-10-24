@@ -4,574 +4,534 @@ LANG=$(settings get system system_locales)
 SDK_VERSION=$(getprop ro.build.version.sdk)
 DIRMOD="/storage/emulated/0/DexOptimizer"
 LOG_FILE="${DIRMOD}/script_log.txt"
-CURRENT_VERSION="8.0.0"
-UPDATE_URL="https://raw.githubusercontent.com/zerxfox/DexOptimizer/main/update.json"
+CURRENT_VERSION="9.0.0"
 
-app_count=()
-lengths=()
-app_reset_count=()
-lengths_reset=()
+OPRESTY_HOST="127.0.0.1"
+OPRESTY_PORT="8080"
+
+MODMGR_LIB="/data/adb/modules/dex_optimizer/webroot/modmgr.sh"
+
+LATEST_VERSION=""
+VERSION_CHECKED=""
+
+worker_count=()
+worker_total=()
+parts=()
 
 is_russian() {
   [[ "$LANG" == *"en-RU"* ]] || [[ "$LANG" == *"ru-"* ]]
 }
 
-log_msg() {
-  echo "$1" | tee -a "$LOG_FILE"
-}
+t() { is_russian && echo "$1" || echo "$2"; }
 
-msg_select() {
-  if is_russian; then
-    echo "1: everything-profile: выявляет узкие места в коде, улучшает производительность."
-    echo "2: speed-profile: оптимизирует скорость выполнения, улучшает отклик интерфейса."
-  else
-    echo "1: everything-profile: identifies bottlenecks in the code to improve performance."
-    echo "2: speed-profile: optimizes execution speed, enhances interface responsiveness."
-  fi
+log_msg() { echo "$1" | tee -a "$LOG_FILE"; }
+
+is_number() {
+  case "$1" in ''|*[!0-9]*) return 1 ;; esac
 }
 
 valid_choice() {
-  if [ "$1" -eq "$1" ] 2>/dev/null; then
-    [ "$1" -ge "$2" ] && [ "$1" -le "$3" ]
-  else
-    return 1
+  is_number "$1" && [ "$1" -ge "$2" ] && [ "$1" -le "$3" ]
+}
+
+ask() {
+  local _var="$1" _ru="$2" _en="$3" _min="$4" _max="$5" _val
+  while true; do
+    t "$_ru" "$_en" | tr -d '\n'
+    read -r _val
+    if valid_choice "$_val" "$_min" "$_max"; then
+      eval "$_var=\$_val"
+      return 0
+    fi
+    t "Ошибка: введите число от $_min до $_max" \
+      "Error: enter a number from $_min to $_max"
+  done
+}
+
+ask_profile() {
+  local _var="$1" _val
+  t "1: everything-profile: выявляет узкие места в коде, улучшает производительность.
+2: speed-profile: оптимизирует скорость выполнения, улучшает отклик интерфейса." \
+    "1: everything-profile: identifies bottlenecks in the code to improve performance.
+2: speed-profile: optimizes execution speed, enhances interface responsiveness."
+  while true; do
+    t "Выбери профиль (1: everything-profile, 2: speed-profile): " \
+      "Select profile (1: everything-profile, 2: speed-profile): " | tr -d '\n'
+    read -r _val
+    case "$_val" in
+      1) eval "$_var=everything-profile"; return ;;
+      2) eval "$_var=speed-profile";      return ;;
+      *) log_msg "$(t "Ошибка: неверный выбор профиля" "Error: invalid profile selection")" ;;
+    esac
+  done
+}
+
+http_local() {
+  printf '%s %s HTTP/1.0\r\nHost: %s\r\nContent-Length: 0\r\nConnection: close\r\n\r\n' \
+    "$1" "$2" "$OPRESTY_HOST" \
+    | nc -w 300 "$OPRESTY_HOST" "$OPRESTY_PORT" 2>/dev/null \
+    | tr -d '\r' | sed '1,/^$/d'
+}
+
+fetch_latest_version() {
+  if [ -z "$VERSION_CHECKED" ]; then
+    VERSION_CHECKED=1
+    LATEST_VERSION=$(http_local GET /dex_optimizer/check-update \
+      | sed -n 's/.*"version":"\([^"]*\)".*/\1/p')
   fi
 }
 
+format_elapsed() {
+  local diff=$(( $(date +%s) - $1 ))
+  echo "$((diff / 60))m $((diff % 60))s"
+}
+
 notify_completion() {
-  execution_time=$(( $(date +%s) - start_time ))
-  local message="$(is_russian && echo "Время работы скрипта: $((execution_time / 60)) минут и $((execution_time % 60)) секунд" || echo "Script execution time: $((execution_time / 60)) minutes and $((execution_time % 60)) seconds.")"
-  su -lp 2000 -c "cmd notification post -S bigtext -t 'DexOptimizer' 'Tag' '$message' > /dev/null 2>&1"
-  log_msg "$message"
+  local diff=$(( $(date +%s) - $1 ))
+  local msg
+  msg="$(t "Время работы скрипта: $((diff / 60)) минут и $((diff % 60)) секунд" \
+           "Script execution time: $((diff / 60)) minutes and $((diff % 60)) seconds.")"
+  su -lp 2000 -c "cmd notification post -S bigtext -t 'DexOptimizer' 'Tag' '$msg' >/dev/null 2>&1"
+  log_msg "$msg"
 }
 
 choose_profile() {
-  package_profile=$1
-  bucket_value=$(am get-standby-bucket "$package_profile")
-  [ -n "$bucket_value" ] && [ "$bucket_value" -gt 10 ] && echo "speed-profile" || echo "everything-profile"
-}
-
-choose_profile_old() {
-  package_profile_old=$1
-
-  bucket_value=$(dumpsys usagestats | grep "package=$package_profile_old" | grep -o 'lastUsedElapsed=+[0-9d]*[0-9h]*[0-9m]*[0-9s]*[0-9]*ms*' | head -n 1 | tr -d 'lastUsedElapsed=+')
-
-  if [ -n "$bucket_value" ]; then
-    total_seconds=0
-
-    for unit in d h m s ms; do
-      if [[ "$bucket_value" == *"$unit"* ]]; then
-        value=$(echo "$bucket_value" | cut -d"$unit" -f1)
-        case "$unit" in
-          d) total_seconds=$((total_seconds + value * 86400)) ;;
-          h) total_seconds=$((total_seconds + value * 3600)) ;;
-          m) total_seconds=$((total_seconds + value * 60)) ;;  
-          s) total_seconds=$((total_seconds + value)) ;;           
-          ms) :
-        esac
-        bucket_value=${bucket_value#*$unit}
-      fi
-    done
-
-    [ "$total_seconds" -gt 600 ] && echo "speed-profile" || echo "everything-profile"
+  local pkg="$1" bucket
+  bucket=$(am get-standby-bucket "$pkg" 2>/dev/null | head -n 1 | tr -d '[:space:]')
+  if is_number "$bucket" && [ "$bucket" -gt 10 ]; then
+    echo "speed-profile"
   else
     echo "everything-profile"
   fi
 }
 
-reset_profiles() {
-  count_reset="$1"
-  app_reset="$2"
-
-  time_start=$(date +%s)
-
-  output=$(cmd package compile --reset "$app_reset" 2>&1)
-
-  time_end=$(date +%s)
-  time_diff=$((time_end - time_start))
-
-  minutes=$((time_diff / 60))
-  seconds=$((time_diff % 60))
-
-  formatted_time="${minutes}m ${seconds}s"
-
-  if echo "$output" | grep -q "Success"; then
-    status=$(is_russian && echo "Успех" || echo "Success")
-  else
-    status=$(is_russian && echo "Ошибка" || echo "Failed")
-  fi
-
-  app_reset_count[$count_reset]=$((app_reset_count[$count_reset] + 1))
-
-  log_msg "$(
-  if is_russian; then
-    cat << EOF
-┌─ Прогресс: ${app_reset_count[$count_reset]} | ${lengths_reset[$count_reset]}
-├─ Приложение: $app_reset
-├─ Статус: $status
-├─ Время: $formatted_time
-└─ Процесс: #$((count_reset + 1))
-EOF
-  else
-    cat << EOF
-┌─ Progress: ${app_reset_count[$count_reset]} | ${lengths_reset[$count_reset]}
-├─ App: $app_compile
-├─ Status: $status
-├─ Time: $formatted_time
-└─ Process: #$((count_reset + 1))
-EOF
-  fi
-)"
-}
-
-compile_profile() {
-  count_compile="$1"
-  app_compile="$2"
-  profile_name="$3" 
-
-  time_start=$(date +%s)
-
-  output=$(case "$SDK_VERSION" in
-    [2][3-8]) cmd package compile -m "$profile_name" --check-prof true -f "$app_compile" ;;
-    [2][9]|3[0-3]) cmd package compile -m "$profile_name" -f "$app_compile" 2>&1 ;;
-    [3][4-5]) cmd package compile -m "$profile_name" -p PRIORITY_INTERACTIVE_FAST -f --full "$app_compile" 2>&1 ;;
-  esac)
-
-  time_end=$(date +%s)
-  time_diff=$((time_end - time_start))
-  
-  minutes=$((time_diff / 60))
-  seconds=$((time_diff % 60))
-
-  formatted_time="${minutes}m ${seconds}s"
-
-  if echo "$output" | grep -q "Success"; then
-    status=$(is_russian && echo "Успех" || echo "Success")
-  else
-    status=$(is_russian && echo "Ошибка" || echo "Failed")
-  fi
-
-  app_count[$count_compile]=$((app_count[$count_compile] + 1))
-
-  log_msg "$(
-  if is_russian; then
-    cat << EOF
-┌─ Прогресс: ${app_count[$count_compile]} | ${lengths[$count_compile]}
-├─ Приложение: $app_compile
-├─ Профиль: $profile_name
-├─ Статус: $status
-├─ Время: $formatted_time
-└─ Процесс: #$((count_compile + 1))
-EOF
-  else
-    cat << EOF
-┌─ Progress: ${app_count[$count_compile]} | ${lengths[$count_compile]}
-├─ App: $app_compile
-├─ Profile: $profile_name
-├─ Status: $status
-├─ Time: $formatted_time
-└─ Process: #$((count_compile + 1))
-EOF
-  fi
-)"
-}
-
-process_part() {
-  count_part="$1"
-  app_part="$2"
-  profile_process="$3"
-  
-  for pack in $app_part; do
-    if [ "$profile_process" = "auto" ]; then
-      if [ "$SDK_VERSION" -ge 23 ] && [ "$SDK_VERSION" -le 27 ]; then
-        selected_profile=$(choose_profile_old "$pack")
-      else
-        selected_profile=$(choose_profile "$pack")
-      fi
-    else
-      selected_profile="$profile_process"
-    fi
-    compile_profile "$count_part" "$pack" "$selected_profile"
+elapsed_to_seconds() {
+  local raw="${1%ms}" total=0 num
+  while [ -n "$raw" ]; do
+    num=${raw%%[!0-9]*}
+    [ -n "$num" ] || break
+    raw=${raw#"$num"}
+    num=${num#"${num%%[!0]*}"}; num=${num:-0}
+    case "$raw" in
+      d*) total=$((total + num * 86400)); raw=${raw#d} ;;
+      h*) total=$((total + num * 3600));  raw=${raw#h} ;;
+      m*) total=$((total + num * 60));    raw=${raw#m} ;;
+      s*) total=$((total + num));         raw=${raw#s} ;;
+      *)  break ;;
+    esac
   done
+  echo "$total"
 }
 
-process_reset_part() {
-  count_reset_part="$1"
-  app_reset_part="$2"
-  
-  for pack in $app_reset_part; do
-    reset_profiles "$count_reset_part" "$pack"
-  done
+choose_profile_old() {
+  local pkg="$1" raw total
+  raw=$(dumpsys usagestats 2>/dev/null \
+        | grep -F "package=$pkg " \
+        | grep -o 'lastUsedElapsed=+[0-9a-z]*' \
+        | head -n 1 \
+        | sed 's/^lastUsedElapsed=+//')
+  [ -z "$raw" ] && { echo "everything-profile"; return; }
+  total=$(elapsed_to_seconds "$raw")
+  [ "$total" -gt 600 ] && echo "speed-profile" || echo "everything-profile"
+}
+
+auto_profile() {
+  if [ "$SDK_VERSION" -ge 23 ] && [ "$SDK_VERSION" -le 27 ]; then
+    choose_profile_old "$1"
+  else
+    choose_profile "$1"
+  fi
 }
 
 get_package_size() {
-  package_name=$1
-  apk_path=$(pm path "$package_name" | cut -d':' -f2)
-  if [ -n "$apk_path" ]; then
-    size=$(stat -c%s "$apk_path" 2>/dev/null)
-    echo "$size"
+  local pkg="$1" path size
+  path=$(pm path "$pkg" | cut -d':' -f2)
+  [ -z "$path" ] && echo 0 && return
+  size=$(stat -c%s "$path" 2>/dev/null)
+  echo "${size:-0}"
+}
+
+list_packages() {
+  pm list packages ${1:+"$1"} | cut -d':' -f2
+}
+
+sort_by_size() {
+  while read -r pkg; do
+    echo "$(get_package_size "$pkg") $pkg"
+  done | sort -nr
+}
+
+_run_timed() {
+  local t0
+  t0=$(date +%s)
+  CMD_OUTPUT=$("$@" 2>&1)
+  TIME_RESULT=$(format_elapsed "$t0")
+}
+
+_log_result() {
+  local idx="$1" total="$2" app="$3" status="$4" time="$5" extra="$6"
+  log_msg "$(t \
+"┌─ Прогресс: $idx | $total
+├─ Приложение: $app
+$extra
+├─ Статус: $status
+├─ Время: $time
+└─ Воркер: #$(( $7 + 1 ))" \
+"┌─ Progress: $idx | $total
+├─ App: $app
+$extra
+├─ Status: $status
+├─ Time: $time
+└─ Worker: #$(( $7 + 1 ))")"
+}
+
+reset_app() {
+  local widx="$1" app="$2" status
+  _run_timed cmd package compile --reset "$app"
+  echo "$CMD_OUTPUT" | grep -q "Success" \
+    && status=$(t "Успех" "Success") \
+    || status=$(t "Ошибка" "Failed")
+  worker_count[$widx]=$(( worker_count[$widx] + 1 ))
+  _log_result "${worker_count[$widx]}" "${worker_total[$widx]}" \
+    "$app" "$status" "$TIME_RESULT" "" "$widx"
+}
+
+run_compile() {
+  local profile="$1" app="$2"
+  if ! is_number "$SDK_VERSION" || [ "$SDK_VERSION" -lt 23 ]; then
+    echo "Unsupported SDK: $SDK_VERSION"
+    return 1
+  elif [ "$SDK_VERSION" -ge 34 ]; then
+    cmd package compile -m "$profile" -p PRIORITY_INTERACTIVE_FAST -f --full "$app" 2>&1
+  elif [ "$SDK_VERSION" -ge 29 ]; then
+    cmd package compile -m "$profile" -f "$app" 2>&1
   else
-    echo 0
+    cmd package compile -m "$profile" --check-prof true -f "$app" 2>&1
   fi
 }
 
-reset_mode(){
-  while true; do
-    is_russian && echo -n "Выбери максимальное число процессов (10 - максимум): " || echo -n "Select the maximum count of PROCESSES (10 - max): "
-    read -r PARTS
-    if valid_choice "$PARTS" 1 10; then break; fi
-    log_msg "$(is_russian && echo "Ошибка: ПРОЦЕССОВ должно быть от 1 до 10" || echo "Error: PROCESSES must be between 1 and 10")" >&2
+compile_app() {
+  local widx="$1" app="$2" profile="$3" status
+  _run_timed run_compile "$profile" "$app"
+  echo "$CMD_OUTPUT" | grep -q "Success" \
+    && status=$(t "Успех" "Success") \
+    || status=$(t "Ошибка" "Failed")
+  worker_count[$widx]=$(( worker_count[$widx] + 1 ))
+  _log_result "${worker_count[$widx]}" "${worker_total[$widx]}" \
+    "$app" "$status" "$TIME_RESULT" \
+    "$(t "├─ Профиль: $profile\n" "├─ Profile: $profile\n")" "$widx"
+}
+
+run_worker_compile() {
+  local widx="$1" profile_mode="$2" pack
+  for pack in ${parts[$widx]}; do
+    if [ "$profile_mode" = "auto" ]; then
+      compile_app "$widx" "$pack" "$(auto_profile "$pack")"
+    else
+      compile_app "$widx" "$pack" "$profile_mode"
+    fi
   done
+}
 
-  is_russian && echo "¦ Сортировка приложений по размеру" || echo "¦ Sorting applications by size"
-  packages_file=$(pm list packages | cut -d':' -f2)
-  sorted_packages=$(while read -r pkg; do
-    size=$(get_package_size "$pkg")
-    echo "$size $pkg"
-  done <<< "$packages_file" | sort -nr)
+run_worker_reset() {
+  local widx="$1" pack
+  for pack in ${parts[$widx]}; do
+    reset_app "$widx" "$pack"
+  done
+}
 
-  total_count=$(echo "$sorted_packages" | wc -l)
-  part_size=$(( (total_count + PARTS - 1) / PARTS ))
+partition_into() {
+  local n="$1" sorted="$2" i=0 idx size pkg
 
-  parts=()
-  i=0
-  while [ $i -lt $PARTS ]; do
+  while [ $i -lt "$n" ]; do
     parts[$i]=""
-    app_reset_count[$i]=0
-    lengths_reset[$i]=0
-    i=$((i + 1))
+    worker_count[$i]=0
+    worker_total[$i]=0
+    i=$(( i + 1 ))
   done
 
   i=0
   while read -r size pkg; do
-    part_index=$((i % PARTS))
-    parts[$part_index]="${parts[$part_index]} $pkg"
-    lengths_reset[$part_index]=$(echo "${parts[$part_index]}" | wc -w)
-    i=$((i + 1))
-  done <<< "$sorted_packages"
+    idx=$(( i % n ))
+    parts[$idx]="${parts[$idx]} $pkg"
+    worker_total[$idx]=$(( worker_total[$idx] + 1 ))
+    i=$(( i + 1 ))
+  done <<< "$sorted"
+}
 
-  log_msg "$(is_russian && echo "¦ Очистка профиля приложений" || echo "¦ Clearing apps profile")"
-  i=0
-  while [ $i -lt $PARTS ]; do
-    process_reset_part "$i" "${parts[$i]}" &
-    i=$((i + 1))
+dispatch_parallel() {
+  local mode="$1" n="$2" profile="${3:-}" i=0
+  while [ $i -lt "$n" ]; do
+    if [ "$mode" = "compile" ]; then
+      run_worker_compile "$i" "$profile" &
+    else
+      run_worker_reset "$i" &
+    fi
+    i=$(( i + 1 ))
   done
   wait
+}
 
-  is_russian && echo "¦ Профиль приложений очищен" || echo "¦ Apps profile cleared"
+reset_mode() {
+  local PARTS sorted
+  ask PARTS \
+    "Выбери максимальное число процессов (10 - максимум): " \
+    "Select the maximum count of PROCESSES (10 - max): " 1 10
+
+  log_msg "$(t "¦ Сортировка приложений по размеру" "¦ Sorting applications by size")"
+  sorted=$(list_packages | sort_by_size)
+  partition_into "$PARTS" "$sorted"
+
+  log_msg "$(t "¦ Очистка профиля приложений" "¦ Clearing apps profile")"
+  dispatch_parallel reset "$PARTS"
+  log_msg "$(t "¦ Профиль приложений очищен" "¦ Apps profile cleared")"
 }
 
 script_mode() {
-  while true; do
-    is_russian && echo -n "Выбери режим скрипта (1: Автоматический, 2: Ручной): " || echo -n "Select the script mode (1: Automatic, 2: Manual): "
-    read -r WORK
-    if valid_choice "$WORK" 1 2; then break; fi
-    echo "$(is_russian && echo "Ошибка: Недопустимое значение для режима скрипта" || echo "Error: Invalid value for the script mode")"
-  done
+  local PARTS WORK PACKAGES profile packages_file bgdj sorted total start
+
+  ask WORK \
+    "Выбери режим скрипта (1: Автоматический, 2: Ручной): " \
+    "Select the script mode (1: Automatic, 2: Manual): " 1 2
 
   if [ "$WORK" -eq 2 ]; then
-    while true; do
-      is_russian && echo -n "Выбери приложения (1: Пользовательские, 2: Системные, 3: Все): " || echo -n "Select apps (1: User, 2: System, 3: All): "
-      read -r PACKAGES
-      if valid_choice "$PACKAGES" 1 3; then break; fi
-      echo "$(is_russian && echo "Ошибка: Недопустимое значение для приложений" || echo "Error: Invalid value to apps")"
-    done
-
-    msg_select
-    while true; do
-      is_russian && echo -n "Выбери профиль (1: everything-profile, 2: speed-profile): " || echo -n "Select profile (1: everything-profile, 2: speed-profile): "
-      read -r SETTINGS
-      case "$SETTINGS" in
-        1) profile="everything-profile"; break ;;
-        2) profile="speed-profile"; break ;;
-        *) log_msg "$(is_russian && echo "Ошибка: Неверный выбор профиля" || echo "Error: Invalid profile selection")";;
-      esac
-    done
+    ask PACKAGES \
+      "Выбери приложения (1: Пользовательские, 2: Системные, 3: Все): " \
+      "Select apps (1: User, 2: System, 3: All): " 1 3
+    ask_profile profile
   else
     PACKAGES=3
     profile="auto"
   fi
 
   case "$PACKAGES" in
-    1) packages_file=$(pm list packages -3 | cut -d':' -f2) ;;  # user
-    2) packages_file=$(pm list packages -s | cut -d':' -f2) ;;  # system
-    3) packages_file=$(pm list packages | cut -d':' -f2) ;;     # all
+    1) packages_file=$(list_packages -3) ;;
+    2) packages_file=$(list_packages -s) ;;
+    3) packages_file=$(list_packages)    ;;
   esac
 
-  while true; do
-    if [ "$selection" -eq 999 ]; then
-      PARTS=25
-      break;
-    else
-      is_russian && echo -n "Выбери максимальное число процессов (10 - максимум): " || echo -n "Select the maximum count of PROCESSES (10 - max): "
-      read -r PARTS
-      if valid_choice "$PARTS" 1 10; then break; fi
-      log_msg "$(is_russian && echo "Ошибка: ПРОЦЕССОВ должно быть от 1 до 10" || echo "Error: PROCESSES must be between 1 and 10")" >&2
-    fi
-  done
-
-  while true; do
-    is_russian && echo -n "Запустить задачу оптимизации DEX? (1: Да, 2: Нет): " || echo -n "Execute DEX optimization task? (1: Yes, 2: No): "
-    read -r bgdj
-    if valid_choice "$bgdj" 1 2; then break; fi
-  done
-
-  is_russian && echo "¦ Сортировка приложений по размеру" || echo "¦ Sorting applications by size"
-
-  sorted_packages=$(while read -r pkg; do
-    size=$(get_package_size "$pkg")
-    echo "$size $pkg"
-  done <<< "$packages_file" | sort -nr)
-
-  total_count=$(echo "$sorted_packages" | wc -l)
-  part_size=$(( (total_count + PARTS - 1) / PARTS ))
-
-  echo ""
-
-  if [ "$WORK" -eq 1 ]; then
-    log_msg "$(is_russian && echo "¦ Выбран режим работы скрипта: Автоматический" || echo "¦ Selected the script operation: Automatic")"
+  if [ "${1:-0}" -eq 999 ] 2>/dev/null; then
+    PARTS=25
   else
-    log_msg "$(is_russian && echo "¦ Выбран режим работы скрипта: Ручной" || echo "¦ Selected the script operation: Manual")"
-    log_msg "$(is_russian && echo "¦ Выбранные пакеты: $PACKAGES" || echo "¦ Selected packages: $PACKAGES")"
-    log_msg "$(is_russian && echo "¦ Выбранный профиль: $SETTINGS" || echo "¦ Selected profile: $SETTINGS")"
+    ask PARTS \
+      "Выбери максимальное число процессов (10 - максимум): " \
+      "Select the maximum count of PROCESSES (10 - max): " 1 10
   fi
-  log_msg "$(is_russian && echo "¦ Количество процессов: $PARTS" || echo "¦ Count of processes: $PARTS")"
-  log_msg "$(is_russian && echo "¦ Количество приложений: $total_count" || echo "¦ Count of apps: $total_count")"
+
+  ask bgdj \
+    "Запустить задачу оптимизации DEX? (1: Да, 2: Нет): " \
+    "Execute DEX optimization task? (1: Yes, 2: No): " 1 2
+
+  log_msg "$(t "¦ Сортировка приложений по размеру" "¦ Sorting applications by size")"
+  sorted=$(echo "$packages_file" | sort_by_size)
+  total=$(echo "$sorted" | wc -l)
+  partition_into "$PARTS" "$sorted"
+
   echo ""
-  log_msg "$(is_russian && echo "¦ Скрипт запущен" || echo "¦ The script is running")"
-  start_time=$(date +%s)
+  if [ "$WORK" -eq 1 ]; then
+    log_msg "$(t "¦ Режим: Автоматический" "¦ Mode: Automatic")"
+  else
+    log_msg "$(t "¦ Режим: Ручной"                "¦ Mode: Manual")"
+    log_msg "$(t "¦ Пакеты: $PACKAGES"            "¦ Packages: $PACKAGES")"
+    log_msg "$(t "¦ Профиль: $profile"             "¦ Profile: $profile")"
+  fi
+  log_msg "$(t "¦ Воркеров: $PARTS"       "¦ Workers: $PARTS")"
+  log_msg "$(t "¦ Приложений: $total"     "¦ Apps: $total")"
+  echo ""
+  log_msg "$(t "¦ Компиляция запущена" "¦ Compilation started")"
+  start=$(date +%s)
 
-  parts=()
-  i=0
-  while [ $i -lt $PARTS ]; do
-    parts[$i]=""
-    app_count[$i]=0
-    lengths[$i]=0
-    i=$((i + 1))
-  done
-
-  i=0
-  while read -r size pkg; do
-    part_index=$((i % PARTS))
-    parts[$part_index]="${parts[$part_index]} $pkg"
-    lengths[$part_index]=$(echo "${parts[$part_index]}" | wc -w)
-    i=$((i + 1))
-  done <<< "$sorted_packages"
-
-  log_msg "$(is_russian && echo "¦ Компиляция пакетов" || echo "¦ Compiling packages")"
-  i=0
-  while [ $i -lt $PARTS ]; do
-    if [ "$WORK" -eq 1 ]; then
-      process_part "$i" "${parts[$i]}" "auto" &
-    else
-      process_part "$i" "${parts[$i]}" "$profile" &
-    fi
-    i=$((i + 1))
-  done
-  wait
+  dispatch_parallel compile "$PARTS" "$profile"
 
   if [ "$bgdj" -eq 1 ]; then
-    log_msg "$(is_russian && echo "¦ Выполнение задачи оптимизации DEX" || echo "¦ Executing DEX Optimization Task")"
-    output=$(cmd package bg-dexopt-job 2>&1) 
-    if echo "$output" | grep -q "Job finished"; then
-      log_msg "$(is_russian && echo "¦ Задача завершена" || echo "¦ Task finished")"
+    log_msg "$(t "¦ Задача bg-dexopt-job" "¦ Running bg-dexopt-job")"
+    local out
+    out=$(cmd package bg-dexopt-job 2>&1)
+    if echo "$out" | grep -q "Job finished"; then
+      log_msg "$(t "¦ Задача завершена" "¦ Task finished")"
     else
-      log_msg "$(is_russian && echo "¦ Ошибка выполнения задачи" || echo "¦ Task execution error")"
+      log_msg "$(t "¦ Ошибка задачи" "¦ Task error")"
     fi
   fi
 
-  notify_completion
+  notify_completion "$start"
 }
 
 select_app_by_name() {
-  packages_file=$(pm list packages | cut -d':' -f2)
-  is_russian && echo -n "Введите имя или часть имени приложения: " || echo -n "Enter the name or part of the app name: "
-  read -r app_name
+  local packages_file matched apps_count app choice num selected profile
 
-  matched_apps=$(echo "$packages_file" | grep -i "$app_name")
+  packages_file=$(list_packages)
 
-  if [ -n "$matched_apps" ]; then
-    is_russian && echo "¦ Найдены следующие приложения:" || echo "¦ Found the following applications:"
-    apps_count=0
-    for app in $matched_apps; do
-      apps_count=$((apps_count + 1))
-      echo "$apps_count: $app"
-    done
+  while true; do
+    t "Введите имя или часть имени приложения: " \
+      "Enter the name or part of the app name: " | tr -d '\n'
+    read -r app_name
 
-    echo ""
-    if [ "$apps_count" -eq 1 ]; then
-      selected_apps="$matched_apps"
-    else
-      while true; do
-        is_russian && echo -n "Выбери приложение (1: все, 2: конкретное): " || echo -n "Select an app (1: all, 2: specific): "
-        read -r choice
+    matched=$(echo "$packages_file" | grep -i "$app_name")
+    [ -n "$matched" ] && break
 
-        if [ "$choice" -eq 1 ]; then
-          selected_apps="$matched_apps"
-          break
-        elif [ "$choice" -eq 2 ]; then
-          is_russian && echo -n "Введите номер приложения для компиляции: " || echo -n "Enter the app number to compile: "
-          read -r app_number
+    t "Приложение '$app_name' не найдено. Попробовать снова (1) или выйти (2)?: " \
+      "App '$app_name' not found. Try again (1) or go back (2)?: " | tr -d '\n'
+    read -r choice
+    case "$choice" in
+      2) return ;;
+    esac
+  done
 
-          selected_app=$(echo "$matched_apps" | sed -n "${app_number}p")
-          if [ -n "$selected_app" ]; then
-            selected_apps="$selected_app"
-            break
-          else
-            is_russian && echo "Ошибка: Некорректный номер приложения" || echo "Error: Invalid app number"
-          fi
-        else
-          is_russian && echo "Неверный выбор. Пожалуйста, выберите 1 или 2" || echo "Invalid selection. Please choose 1 or 2"
-        fi
-      done
-    fi
+  t "¦ Найдены приложения:" "¦ Found applications:"
+  apps_count=0
+  for app in $matched; do
+    apps_count=$(( apps_count + 1 ))
+    echo "$apps_count: $app"
+  done
+  echo ""
+
+  selected=""
+  if [ "$apps_count" -eq 1 ]; then
+    selected="$matched"
   else
     while true; do
-      is_russian && echo -e "Приложение с именем $app_name не найдено.\nПопробовать снова (1) или вернуться в меню (2)?: " || echo -e "Application with the name $app_name not found.\nTry again (1) or return to menu (2)?: "
-      read -r retry_choice
-
-      case "$retry_choice" in
-        1) select_app_by_name; return ;;
-        2) return ;;
-        *) is_russian && echo "Неверный выбор. Пожалуйста, выберите 1 или 2" || echo "Invalid selection. Please choose 1 or 2" ;;
+      t "Выбери (1: все, 2: конкретное): " "Select (1: all, 2: specific): " | tr -d '\n'
+      read -r choice
+      case "$choice" in
+        1) selected="$matched"; break ;;
+        2)
+          t "Номер приложения: " "App number: " | tr -d '\n'
+          read -r num
+          app=$(echo "$matched" | sed -n "${num}p")
+          if [ -n "$app" ]; then selected="$app"; break
+          else t "Некорректный номер" "Invalid number"; fi ;;
+        *) t "Введите 1 или 2" "Enter 1 or 2" ;;
       esac
     done
   fi
 
-  msg_select
-  while true; do
-    is_russian && echo -n "Выбери профиль (1: everything-profile, 2: speed-profile): " || echo -n "Select profile (1: everything-profile, 2: speed-profile): "
-    read -r SETTINGS
-
-    case "$SETTINGS" in
-      1) profile="everything-profile"; break ;;
-      2) profile="speed-profile"; break ;;
-      *) log_msg "$(is_russian && echo "Ошибка: Неверный выбор профиля" || echo "Error: Invalid profile selection")";;
-    esac
-  done
-
+  ask_profile profile
   echo ""
-  for app in $selected_apps; do
-    compile_profile 0 "$app" "$profile"
+  for app in $selected; do
+    compile_app 0 "$app" "$profile"
   done
 }
 
 show_changelog() {
-  CHANGELOG_URL="https://raw.githubusercontent.com/zerxfox/DexOptimizer/main/changelog.md"
-  changelog_content=$(wget --no-check-certificate -qO- "$CHANGELOG_URL")
-  if [ -n "$changelog_content" ]; then
+  local content
+  content=$(http_local GET /dex_optimizer/changelog)
+  if [ -n "$content" ]; then
     clear
-    echo -e "╔════════════════════════════════════════════╗"
-    echo -e "║───────────DexOptimizer Changelog───────────║"
-    echo -e "╚════════════════════════════════════════════╝"
-    echo "$changelog_content"
+    echo "╔════════════════════════════════════════════╗"
+    echo "║───────────DexOptimizer Changelog───────────║"
+    echo "╚════════════════════════════════════════════╝"
+    echo "$content"
   else
-    is_russian && echo "Не удалось загрузить changelog" || echo "Failed to load changelog"
+    t "Не удалось загрузить changelog (нет интернета или локальный сервер недоступен)" \
+      "Failed to load changelog (no internet or local server unavailable)"
   fi
 }
 
 module_update() {
-  if ping -c 1 google.com &> /dev/null; then
-    ZIP_FILE="/data/local/tmp/dex_optimizer.zip"
-    : > "$ZIP_FILE"
-    
-    log_msg "$(is_russian && echo "Проверка обновлений" || echo "Checking for updates")"
-    LATEST_VERSION=$(wget --no-check-certificate -qO- "$UPDATE_URL" | grep '"version":' | cut -d '"' -f 4)
+  local zip_file="/data/local/tmp/dex_optimizer.zip" resp reboot_choice
 
-    if [ "$LATEST_VERSION" != "$CURRENT_VERSION" ]; then
-      ZIP_URL=$(wget --no-check-certificate -qO- "$UPDATE_URL" | grep '"zipUrl":' | cut -d '"' -f 4)
+  log_msg "$(t "Проверка обновлений" "Checking for updates")"
+  VERSION_CHECKED=""; LATEST_VERSION=""
+  fetch_latest_version
 
-      log_msg "$(is_russian && echo "Загрузка новой версии с: \n$ZIP_URL" || echo "Downloading new version from: \n$ZIP_URL")"
-
-      wget --no-check-certificate -O "$ZIP_FILE" "$ZIP_URL"
-
-      if [ -f "$ZIP_FILE" ]; then
-        log_msg "$(is_russian && echo "Установка новой версии" || echo "Installing new version")"
-
-        if [ -d "/data/adb/magisk" ]; then
-          magisk --install-module "$ZIP_FILE"
-        elif ksud --version >/dev/null 2>&1 && [ -d "/data/adb/ksu" ]; then
-          ksud module install "$ZIP_FILE"
-        elif apd --version >/dev/null 2>&1 && [ -d "/data/adb/ap" ]; then
-          apd module install "$ZIP_FILE"
-        else
-          log_msg "$(is_russian && echo "Не удалось определить менеджер модулей" || echo "Failed to determine the module manager")"
-          exit 1
-        fi
-
-        log_msg "$(is_russian && echo "Модуль обновлен до версии: $LATEST_VERSION" || echo "Module updated to version: $LATEST_VERSION")"
-        
-        while true; do
-          is_russian && echo -n "Выполнить перезагрузку? (1: Да, 2: Нет): " || echo -n "Do you want to reboot? (1: Yes, 2: No): "
-          read -r reboot_choice
-          if valid_choice "$reboot_choice" 1 2; then break; fi
-        done
-
-        if [ "$reboot_choice" -eq 1 ]; then
-          reboot
-        fi
-      else
-        log_msg "$(is_russian && echo "Не удалось загрузить обновление" || echo "Failed to download update")" 
-      fi
-    else
-      log_msg "$(is_russian && echo "Обновлений нет" || echo "No updates available")"
-    fi
-  else
-    log_msg "$(is_russian && echo "Нет подключения к интернету. Проверьте соединение." || echo "No internet connection. Please check your connection.")"
+  if [ -z "$LATEST_VERSION" ]; then
+    log_msg "$(t "Нет интернета или локальный сервер недоступен" "No internet or local server unavailable")"
+    return
   fi
-}
+  if [ "$LATEST_VERSION" = "$CURRENT_VERSION" ]; then
+    log_msg "$(t "Обновлений нет" "No updates available")"
+    return
+  fi
 
-handle_selection() {
-  case "$1" in
-    1) script_mode; show_menu ;;
-    2) select_app_by_name; show_menu ;;
-    3) reset_mode; show_menu ;;
-    4) module_update; show_menu ;;
-    5) show_changelog; show_menu ;;
-    6) exit ;;
-    999) script_mode; show_menu ;;
+  if [ ! -r "$MODMGR_LIB" ]; then
+    log_msg "$(t "Не найден $MODMGR_LIB" "Not found: $MODMGR_LIB")"
+    return 1
+  fi
+  . "$MODMGR_LIB"
+  if ! find_module_managers; then
+    log_msg "$(t "Не удалось определить менеджер модулей. Проверено:" "Failed to determine the module manager. Checked:")"
+    log_msg "$(modmgr_searched)"
+    return 1
+  fi
+
+  log_msg "$(t "Загрузка версии $LATEST_VERSION" "Downloading version $LATEST_VERSION")"
+  resp=$(http_local POST /dex_optimizer/download-update)
+  case "$resp" in
+    OK*) ;;
     *)
-      is_russian && echo "Ошибка: Неверный выбор. Пожалуйста, выберите от 1 до 6" || echo "Error: Invalid selection. Please select from 1 to 6"
-      echo -n "$(is_russian && echo "Выберите опцию: " || echo "Select an option: ")" 
+      log_msg "$(t "Не удалось загрузить файл: $resp" "Failed to download file: $resp")"
+      return
       ;;
   esac
 
-  read -r selection
-  handle_selection "$selection"
+  if [ ! -s "$zip_file" ]; then
+    log_msg "$(t "Загруженный файл повреждён или пуст" "Downloaded file is corrupted or empty")"
+    return
+  fi
+
+  log_msg "$(t "Установка" "Installing")"
+  if ! install_module_zip "$zip_file"; then
+    return 1
+  fi
+
+  log_msg "$(t "Обновлено до $LATEST_VERSION" "Updated to $LATEST_VERSION")"
+  ask reboot_choice \
+    "Перезагрузить устройство? (1: Да, 2: Нет): " \
+    "Reboot the device? (1: Yes, 2: No): " 1 2
+  [ "$reboot_choice" -eq 1 ] && reboot
 }
 
 show_menu() {
-  echo -e "╔════════════════════════════════════════════╗"
-  echo -e "║─────────────DexOptimizer Menu──────────────║"
-  echo -e "╚════════════════════════════════════════════╝"
+  echo "╔════════════════════════════════════════════╗"
+  echo "║─────────────DexOptimizer Menu──────────────║"
+  echo "╚════════════════════════════════════════════╝"
   echo ""
-  if ping -c 1 google.com &> /dev/null; then
-  LATEST_VERSION=$(wget --no-check-certificate -qO- "$UPDATE_URL" | grep '"version":' | cut -d '"' -f 4)
-  
-    if [ "$LATEST_VERSION" != "$CURRENT_VERSION" ]; then
-      is_russian && echo "Доступна новая версия модуля: $LATEST_VERSION" || echo "New version available: $LATEST_VERSION"
-    else
-      is_russian && echo "Обновлений нет. Текущая версия: $CURRENT_VERSION" || echo "No updates available. Current version: $CURRENT_VERSION"
-    fi
+
+  fetch_latest_version
+  if [ -z "$LATEST_VERSION" ]; then
+    t "Нет интернета или локальный сервер недоступен" "No internet or local server unavailable"
+  elif [ "$LATEST_VERSION" != "$CURRENT_VERSION" ]; then
+    t "Доступна новая версия: $LATEST_VERSION" "New version available: $LATEST_VERSION"
   else
-    is_russian && echo "Нет подключения к интернету. Проверьте соединение." || echo "No internet connection. Please check your connection."
+    t "Актуальная версия: $CURRENT_VERSION" "Up to date: $CURRENT_VERSION"
   fi
+
   echo ""
-  is_russian && echo "[1] Начать компиляцию приложений" || echo "[1] Start compiling apps"
-  is_russian && echo "[2] Выбрать профиль приложению" || echo "[2] Select a profile for the app"
-  is_russian && echo "[3] Очистить профиль всех приложений" || echo "[3] Clear all apps profiles"
-  is_russian && echo "[4] Обновить модуль" || echo "[4] Update module"
-  is_russian && echo "[5] Показать изменения" || echo "[5] Show the changelog"
-  is_russian && echo "[6] Выход из модуля" || echo "[6] Exit from the module"
+  t "[1] Начать компиляцию приложений"      "[1] Start compiling apps"
+  t "[2] Выбрать профиль приложению"        "[2] Compile a specific app"
+  t "[3] Очистить профиль всех приложений"  "[3] Reset all app profiles"
+  t "[4] Обновить модуль"                   "[4] Update module"
+  t "[5] Показать изменения"                "[5] Show changelog"
+  t "[6] Выход"                             "[6] Exit"
   echo ""
-  is_russian && echo -n "Выберите опцию: " || echo -n "Select an option: "
+  t "Выберите опцию: " "Select an option: " | tr -d '\n'
+}
+
+main_loop() {
+  local sel="$1"
+  while true; do
+    case "$sel" in
+      1)   script_mode "$sel" ;;
+      2)   select_app_by_name ;;
+      3)   reset_mode ;;
+      4)   module_update ;;
+      5)   show_changelog ;;
+      6)   exit 0 ;;
+      999) script_mode "$sel" ;;
+      *)   t "Ошибка: введите от 1 до 6" "Error: enter 1 to 6" ;;
+    esac
+    show_menu
+    read -r sel
+  done
 }
 
 mkdir -p "$DIRMOD"
 : > "$LOG_FILE"
-log_msg "$(is_russian && echo -e "Имя устройства: $(getprop ro.product.name) \nМодель устройства: $(getprop ro.product.system.model) \nВерсия модуля: $CURRENT_VERSION" || echo -e "Device Name: $(getprop ro.product.name) \nSystem Model: $(getprop ro.product.system.model) \nModule version: $CURRENT_VERSION")"
+log_msg "$(t \
+  "Устройство: $(getprop ro.product.name) | $(getprop ro.product.system.model) | v$CURRENT_VERSION" \
+  "Device: $(getprop ro.product.name) | $(getprop ro.product.system.model) | v$CURRENT_VERSION")"
 clear
-
 show_menu
 read -r selection
-handle_selection "$selection"
+main_loop "$selection"
