@@ -54,5 +54,5 @@ su -c deop
 ## 📜 Список изменений
 
 Для полного списка изменений, пожалуйста, ознакомьтесь с:  
-[![Changelog](https://img.shields.io/badge/📜-Changelog-blue)](changelog_ru.md)
+[![Changelog](https://img.shields.io/badge/📜-Changelog-blue)](changelog.md)
 
