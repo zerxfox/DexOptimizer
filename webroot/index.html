@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DexOptimizer</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app-root">
+  <div class="blob"></div>
+
+  <div class="main-layer" id="main-layer">
+    <div class="main-outer">
+      <div class="main-inner" id="main-inner">
+
+        <div class="main-page">
+          <div class="page-scroll">
+            <div class="page-header">
+              <div class="page-title" id="headerTitle">DexOptimizer</div>
+            </div>
+
+            <div class="stat-grid" id="stat-grid">
+              <div class="stat-card">
+                <div class="stat-value" id="stat-optimized">0</div>
+                <div class="stat-label" id="stat-optimized-label">Оптимизировано</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-value" id="stat-lastrun">—</div>
+                <div class="stat-label" id="stat-lastrun-label">Последний запуск</div>
+              </div>
+              <div class="stat-card wide clickable" id="stat-dex-card" role="button" tabindex="0" aria-label="Открыть логи">
+                <div class="stat-label" id="stat-dex-label">DEX compiled</div>
+                <div class="prog-wrap">
+                  <div class="prog-header">
+                    <span class="prog-name" id="stat-prog-name">Прогресс последнего запуска</span>
+                    <span class="prog-pct" id="stat-prog-pct">0%</span>
+                  </div>
+                  <div class="prog-track">
+                    <div class="prog-fill" id="stat-prog-fill" style="width:0%"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="tiles-grid">
+              <div class="menu-tile" id="tile-compile" data-sub="0">
+                <div class="menu-tile-icon">⚡</div>
+                <div class="menu-tile-name" id="tile-compile-name">Компиляция</div>
+              </div>
+              <div class="menu-tile" id="tile-clean" data-sub="1">
+                <div class="menu-tile-icon">🗑</div>
+                <div class="menu-tile-name" id="tile-clean-name">Очистка</div>
+              </div>
+              <div class="menu-tile" id="tile-profile" data-sub="2">
+                <div class="menu-tile-icon">🗳</div>
+                <div class="menu-tile-name" id="tile-profile-name">Профиль</div>
+              </div>
+              <div class="menu-tile" id="tile-stats" data-sub="3">
+                <div class="menu-tile-icon">📈</div>
+                <div class="menu-tile-name" id="tile-stats-name">Статистика</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="main-page">
+          <div class="page-scroll">
+            <div class="page-header">
+              <div class="page-title" id="donate-title">Поддержка</div>
+            </div>
+            <div class="donate-hero">
+              <div class="donate-hero-icon">❤️</div>
+              <div class="donate-hero-title" id="donate-hero-title">Поддержать ZerxFox</div>
+              <div class="donate-hero-sub" id="donate-hero-sub">
+                Если модуль помогает — поддержи разработку. Спасибо!
+              </div>
+            </div>
+            <div class="donate-btn yoomoney" id="yoomoneyBtn">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="white" stroke-width="2"/><path d="M8 12H16M12 8V16" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>
+              <span id="yoomoney-label">Перевести на ЮMoney</span>
+            </div>
+            <div class="donate-btn tgwallet" id="tgWalletBtn">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="white" stroke-width="2"/><path d="M8 13L11 16L16 8" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span>TG Wallet</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="main-page">
+          <div class="page-scroll">
+            <div class="page-header">
+              <div class="page-title" id="settings-title">Настройки</div>
+            </div>
+            <div class="about-card">
+              <div class="about-icon">⚡</div>
+              <div>
+                <div class="about-name">DexOptimizer</div>
+                <div class="about-ver" id="module-ver">v9.0 · by ZerxFox</div>
+              </div>
+              <div class="update-btn" id="update-btn">Обновить</div>
+            </div>
+            <div class="settings-group">
+              <div class="settings-row" id="theme-row">
+                <div class="settings-row-icon">🎨</div>
+                <div class="settings-row-label" id="settings-theme-label">Тема</div>
+                <div class="theme-dots">
+                  <div class="theme-dot" data-theme="calmNight" role="button" aria-label="Тема Calm Night" style="background:#1a1124;border:1.5px solid rgba(255,255,255,.4);"></div>
+                  <div class="theme-dot" data-theme="mutedOcean" role="button" aria-label="Тема Muted Ocean" style="background:linear-gradient(45deg,#93a5cf,#e4efe9);"></div>
+                  <div class="theme-dot" data-theme="eclipse" role="button" aria-label="Тема Eclipse" style="background:#050a0a;border:.5px solid rgba(255,255,255,.2);"></div>
+                  <div class="theme-dot" data-theme="crimsonNoir" role="button" aria-label="Тема Crimson Noir" style="background:#1a0f14;border:.5px solid rgba(225,29,72,.4);"></div>
+                  <div class="theme-dot" data-theme="amberDusk" role="button" aria-label="Тема Amber Dusk" style="background:#1e1810;border:.5px solid rgba(245,158,11,.4);"></div>
+                </div>
+              </div>
+              <div class="settings-row" id="lang-row">
+                <div class="settings-row-icon">🌐</div>
+                <div class="settings-row-label" id="settings-lang-label">Язык</div>
+                <div class="settings-row-value" id="settings-lang-value">Русский</div>
+                <div class="settings-row-arrow">›</div>
+              </div>
+            </div>
+
+            <div class="sec-label" id="settings-defaults-label">Дефолты компиляции</div>
+            <div class="settings-group">
+              <div class="settings-row settings-row-static">
+                <div class="settings-row-icon">🤖</div>
+                <div class="settings-row-label" id="def-mode-label">Режим</div>
+                <div class="settings-row-value" id="def-mode-value">Авто</div>
+              </div>
+              <div class="settings-row settings-row-static">
+                <div class="settings-row-icon">📦</div>
+                <div class="settings-row-label" id="def-apps-label">Приложения</div>
+                <div class="settings-row-value" id="def-apps-value">Все</div>
+              </div>
+              <div class="settings-row settings-row-static">
+                <div class="settings-row-icon">🗂</div>
+                <div class="settings-row-label" id="def-profile-label">Профиль</div>
+                <div class="settings-row-value" id="def-profile-value">Everything / Speed</div>
+              </div>
+              <div class="settings-row settings-row-static">
+                <div class="settings-row-icon">⚙</div>
+                <div class="settings-row-label" id="def-proc-label">Число процессов</div>
+                <div class="settings-row-value" id="def-proc-value">4</div>
+              </div>
+              <div class="settings-row settings-row-static">
+                <div class="settings-row-icon">⚡</div>
+                <div class="settings-row-label" id="def-dex-label">Оптимизация DEX</div>
+                <div class="settings-row-value" id="def-dex-value">✔</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="fnav-wrap" id="fnav-wrap">
+      <div class="fnav">
+        <div class="nav-item active" data-main="0">
+          <div class="nav-item-icon">🏠</div>
+          <div class="nav-item-label" id="nav-home">Главная</div>
+        </div>
+        <div class="nav-item" data-main="1">
+          <div class="nav-item-icon">❤️</div>
+          <div class="nav-item-label" id="nav-donate">Донат</div>
+        </div>
+        <div class="nav-item" data-main="2">
+          <div class="nav-item-icon">⚙</div>
+          <div class="nav-item-label" id="nav-settings">Настройки</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="sub-layer" id="sub-layer">
+    <div class="sub-outer">
+      <div class="sub-inner" id="sub-inner">
+
+        <div class="sub-page">
+          <div class="page-scroll">
+            <div class="page-header">
+              <div class="back-btn" data-close-sub role="button" aria-label="Назад">←</div>
+              <div class="page-title centered" id="compile-title">Компиляция</div>
+              <div class="header-ghost"></div>
+            </div>
+
+            <div class="sec-label" id="compile-mode-label">Режим</div>
+            <div class="btoggle col-2" id="mode-group">
+              <div class="bcard active" data-mode="auto">
+                <div class="bcard-icon">🤖</div>
+                <div class="bcard-name" id="mode-auto-label">Авто</div>
+              </div>
+              <div class="bcard" data-mode="manual">
+                <div class="bcard-icon">🎛</div>
+                <div class="bcard-name" id="mode-manual-label">Ручной</div>
+              </div>
+            </div>
+
+            <div class="fields-group disabled" id="manual-fields">
+              <div class="sec-label" id="compile-apps-label">Приложения</div>
+              <div class="btoggle col-3" id="compile-apps-group">
+                <div class="bcard" data-value="user">
+                  <div class="bcard-icon">👤</div>
+                  <div class="bcard-name" id="apps-user-label">Польз.</div>
+                </div>
+                <div class="bcard" data-value="system">
+                  <div class="bcard-icon">⚙</div>
+                  <div class="bcard-name" id="apps-system-label">Системн.</div>
+                </div>
+                <div class="bcard active" data-value="all">
+                  <div class="bcard-icon">📦</div>
+                  <div class="bcard-name" id="apps-all-label">Все</div>
+                </div>
+              </div>
+
+              <div class="sec-label" id="compile-profile-label">Профиль DEX</div>
+              <div class="btoggle col-2" id="compile-profile-group">
+                <div class="bcard active" data-value="everything-profile">
+                  <div class="bcard-icon">🌐</div>
+                  <div class="bcard-name">everything</div>
+                </div>
+                <div class="bcard" data-value="speed-profile">
+                  <div class="bcard-icon">⚡</div>
+                  <div class="bcard-name">speed</div>
+                </div>
+              </div>
+
+              <div class="sec-label" id="compile-extra-label">Дополнительно</div>
+              <div class="stepper-row">
+                <div class="stepper-label" id="compile-proc-label">Процессы</div>
+                <div class="stepper-ctrl">
+                  <div class="step-btn" id="compile-proc-minus" role="button" aria-label="Уменьшить">−</div>
+                  <div class="step-value" id="compile-proc-value">4</div>
+                  <div class="step-btn" id="compile-proc-plus" role="button" aria-label="Увеличить">+</div>
+                </div>
+              </div>
+              <div class="switch-row">
+                <div class="switch-row-icon">⚙</div>
+                <div class="switch-row-label" id="compile-dex-label">Оптимизация DEX</div>
+                <div class="switch on" id="dex-switch" role="switch" aria-checked="true" aria-label="Оптимизация DEX">
+                  <div class="switch-knob"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="start-btn" id="compile-start-btn">⚡ Начать компиляцию</div>
+          </div>
+        </div>
+
+        <div class="sub-page">
+          <div class="page-scroll">
+            <div class="page-header">
+              <div class="back-btn" data-close-sub role="button" aria-label="Назад">←</div>
+              <div class="page-title centered" id="clean-title">Очистка</div>
+              <div class="header-ghost"></div>
+            </div>
+
+            <div class="sec-label" id="clean-apps-label">Приложения</div>
+            <div class="btoggle col-4" id="clean-apps-group">
+              <div class="bcard active" data-value="user">
+                <div class="bcard-icon">👤</div>
+                <div class="bcard-name" id="clean-user-label">Пользователь</div>
+              </div>
+              <div class="bcard" data-value="system">
+                <div class="bcard-icon">⚙</div>
+                <div class="bcard-name" id="clean-system-label">Системные</div>
+              </div>
+              <div class="bcard" data-value="all">
+                <div class="bcard-icon">📦</div>
+                <div class="bcard-name" id="clean-all-label">Все</div>
+              </div>
+              <div class="bcard" data-value="selectively" id="clean-selective-card">
+                <div class="bcard-icon">🔍</div>
+                <div class="bcard-name" id="clean-selective-label">Выборочно</div>
+              </div>
+            </div>
+
+            <div class="stepper-row">
+              <div class="stepper-label" id="clean-proc-label">Процессы</div>
+              <div class="stepper-ctrl">
+                <div class="step-btn" id="clean-proc-minus" role="button" aria-label="Уменьшить">−</div>
+                <div class="step-value" id="clean-proc-value">4</div>
+                <div class="step-btn" id="clean-proc-plus" role="button" aria-label="Увеличить">+</div>
+              </div>
+            </div>
+
+            <div id="clean-search-section" style="display:none;flex-direction:column;gap:8px;">
+              <div class="sec-label" id="clean-search-label">Поиск приложения</div>
+              <div class="search-box">
+                <div class="search-input-row">
+                  <span class="search-icon">🔍</span>
+                  <input class="search-input" id="app-name-clean" placeholder="Введите название">
+                </div>
+                <div class="search-results" id="results-clean"></div>
+              </div>
+            </div>
+
+            <div class="start-btn" id="clean-start-btn">🗑 Начать очистку</div>
+          </div>
+        </div>
+
+        <div class="sub-page">
+          <div class="page-scroll">
+            <div class="page-header">
+              <div class="back-btn" data-close-sub role="button" aria-label="Назад">←</div>
+              <div class="page-title centered" id="profile-title">Профиль приложения</div>
+              <div class="header-ghost"></div>
+            </div>
+
+            <div class="sec-label" id="profile-dex-label">Профиль DEX</div>
+            <div class="btoggle col-2" id="profile-dex-group">
+              <div class="bcard active" data-value="everything-profile">
+                <div class="bcard-icon">🌐</div>
+                <div class="bcard-name">everything</div>
+              </div>
+              <div class="bcard" data-value="speed-profile">
+                <div class="bcard-icon">⚡</div>
+                <div class="bcard-name">speed</div>
+              </div>
+            </div>
+
+            <div class="sec-label" id="profile-app-label">Приложение</div>
+            <div class="search-box">
+              <div class="search-input-row">
+                <span class="search-icon">🔍</span>
+                <input class="search-input" id="app-name-profile" placeholder="Найти приложение">
+              </div>
+              <div class="search-results" id="results-profile"></div>
+            </div>
+
+            <div class="selected-app" id="selected-app" style="display:none;">
+              <div class="selected-app-icon" id="selected-app-icon">📦</div>
+              <div class="selected-app-info">
+                <div class="selected-app-label" id="selected-app-label"></div>
+                <div class="selected-app-name" id="selected-app-name">—</div>
+              </div>
+              <div class="selected-app-clear" id="clear-selected-app" role="button" aria-label="Очистить выбор">✕</div>
+            </div>
+
+            <div class="start-btn disabled" id="profile-start-btn">🗳 Выберите приложение</div>
+          </div>
+        </div>
+
+        <div class="sub-page">
+          <div class="page-scroll">
+            <div class="page-header">
+              <div class="back-btn" data-close-sub role="button" aria-label="Назад">←</div>
+              <div class="page-title centered" id="stats-title">Статистика</div>
+              <div class="header-ghost"></div>
+            </div>
+            <div class="stats-grid" id="stats-cards">
+              <div class="stats-card"><div class="stats-value" id="s-optimized">—</div><div class="stats-label" id="s-optimized-l">Оптимизировано</div></div>
+              <div class="stats-card"><div class="stats-value" id="s-runs">—</div><div class="stats-label" id="s-runs-l">Запусков</div></div>
+              <div class="stats-card"><div class="stats-value" id="s-speed">—</div><div class="stats-label" id="s-speed-l">Прирост скорости</div></div>
+              <div class="stats-card"><div class="stats-value" id="s-last">—</div><div class="stats-label" id="s-last-l">Последний запуск</div></div>
+            </div>
+            <div class="chart-box" id="stats-box">
+              <div class="chart-header">
+                <div class="chart-title" id="chart-title">Скорость компиляции · 7 дней</div>
+                <div class="chart-clear-btn" id="stats-clear-btn" role="button" aria-label="Очистить статистику">🗑</div>
+              </div>
+              <div id="chartContainer">
+                <div class="bar-chart" id="statsChart"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sub-page">
+          <div class="page-scroll">
+            <div class="page-header">
+              <div class="back-btn" data-close-sub role="button" aria-label="Назад">←</div>
+              <div class="page-title centered" id="console-title">Консоль</div>
+              <div class="header-ghost"></div>
+            </div>
+            <div class="log-view" id="log-view" data-mode="text">
+              <div class="log-notice" id="log-notice" role="status" hidden></div>
+              <div class="log-card log-summary">
+                <div class="log-ring" id="log-ring"><div class="log-ring-inner" id="log-ring-pct">0%</div></div>
+                <div class="log-summary-text">
+                  <div class="log-apps" id="log-sum-apps"></div>
+                  <div class="log-sub" id="log-sum-profile"></div>
+                  <div class="log-sub" id="log-sum-time"></div>
+                  <div class="log-dex" id="log-dex" data-state="" role="status" hidden>
+                    <span class="log-dex-dot" aria-hidden="true"></span>
+                    <span id="log-dex-text"></span>
+                  </div>
+                </div>
+              </div>
+              <div class="log-card" id="log-lanes-card" hidden>
+                <div class="log-card-title" id="log-lanes-title"></div>
+                <div class="log-lanes" id="log-lanes"></div>
+              </div>
+              <div class="log-filters" id="log-filters" role="group">
+                <button type="button" class="log-chip active" data-filter="all" aria-pressed="true"></button>
+                <button type="button" class="log-chip fail" data-filter="fail" aria-pressed="false"></button>
+                <button type="button" class="log-chip ok" data-filter="ok" aria-pressed="false"></button>
+              </div>
+              <div class="log-card log-list" id="log-list" data-filter="all"></div>
+              <div class="log-empty" id="log-empty" hidden></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div id="info-message"></div>
+
+<div class="dialog-backdrop" id="app-dialog" role="dialog" aria-modal="true" aria-labelledby="app-dialog-title" hidden>
+  <div class="dialog">
+    <div class="dialog-title" id="app-dialog-title"></div>
+    <div class="dialog-text" id="app-dialog-text"></div>
+    <div class="dialog-actions">
+      <button type="button" class="dialog-btn" id="app-dialog-no"></button>
+      <button type="button" class="dialog-btn primary" id="app-dialog-yes"></button>
+    </div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
