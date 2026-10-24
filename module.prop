@@ -1,6 +1,6 @@
 id=dex_optimizer
 name=Dex optimization
-version=8.0.0
-versioncode=8000
+version=9.0.0
+versionCode=9000
 author=zerxfox
 description=Dex Optimizer enhances app performance by optimizing DEX code, reducing startup time and improving resource efficiency. Launch via: Terminal: (su -c deop) or Webroot Manager
